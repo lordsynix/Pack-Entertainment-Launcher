@@ -9,5 +9,4 @@ public static class Game
     public static int BundleVersion;
     public static bool isDownloaded;
     public static bool isUpdated;
-
 }

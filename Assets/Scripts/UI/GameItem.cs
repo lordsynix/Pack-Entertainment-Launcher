@@ -7,7 +7,7 @@ using UnityEngine.UI;
 public class GameItem
 {
     public string gameName;
-
     public Sprite gameLogo;
+    public string[] genres;
 
 }
