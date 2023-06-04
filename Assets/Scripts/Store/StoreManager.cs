@@ -10,6 +10,7 @@ public class StoreManager : MonoBehaviour
     public GameObject gameItemPrefab;
 
     private GameObject previousCategory;
+    public Text categoryTag;
 
     private void Start()
     {
@@ -25,6 +26,7 @@ public class StoreManager : MonoBehaviour
 
     public void OnClickCategory(GameObject inputCategory)
     {
+        categoryTag.text = inputCategory.name;
         inputCategory.SetActive(true);
         previousCategory.SetActive(false);
         previousCategory = inputCategory;
