@@ -9,17 +9,39 @@ public class StoreManager : MonoBehaviour
     public GameObject gameItemParent;
     public GameObject gameItemPrefab;
 
-    public void OnClickGenre(GameObject category)
+    private GameObject previousCategory;
+
+    private void Start()
     {
+        HorizontalLayoutGroup[] categories = GetComponentsInChildren<HorizontalLayoutGroup>();
+        foreach (HorizontalLayoutGroup category in categories)
+        {
+            if (category.enabled == true)
+            {
+                previousCategory = category.gameObject;
+            }
+        }
+    }
+
+    public void OnClickCategory(GameObject inputCategory)
+    {
+        inputCategory.SetActive(true);
+        previousCategory.SetActive(false);
+        previousCategory = inputCategory;
+
+        // Search all game items in specified category
         foreach (GameItem gameItem in gameItems)
         {
-            string[] genres = gameItem.genres;
-            foreach (string genre in genres)
+            string[] categories = gameItem.genres;
+            foreach (string category in categories)
             {
-                if (category.name == genre)
+                if (inputCategory.name == category)
                 {
-                    Debug.Log(category.name);
                     SpawnItem(gameItem);
+                }
+                else
+                {
+                    Debug.Log("Name of category not found!");
                 }
             }
         }
