@@ -39,7 +39,7 @@ public class StoreManager : MonoBehaviour
             {
                 if (inputCategory.name == category)
                 {
-                    SpawnItem(gameItem);
+                    SpawnItem(gameItem, inputCategory);
                 }
                 else
                 {
@@ -49,8 +49,9 @@ public class StoreManager : MonoBehaviour
         }
     }
 
-    private void SpawnItem(GameItem gameItem)
+    private void SpawnItem(GameItem gameItem, GameObject category)
     {
-
+        GameObject spawnedGameItem = Instantiate(gameItemPrefab, category.transform);
+        spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(gameItem.gameLogo, gameItem.gameName);
     }
 }
