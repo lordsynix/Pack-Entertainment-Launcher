@@ -14,7 +14,7 @@ public class StoreManager : MonoBehaviour
 
     private List<GameObject> spawnedGameItems = new List<GameObject>();
 
-    private void Start()
+    private void OnEnable()
     {
         HorizontalLayoutGroup[] categories = GetComponentsInChildren<HorizontalLayoutGroup>();
         foreach (HorizontalLayoutGroup category in categories)
@@ -22,6 +22,7 @@ public class StoreManager : MonoBehaviour
             if (category.enabled == true)
             {
                 previousCategory = category.gameObject;
+                ReloadCategory(category.gameObject);
             }
         }
     }
@@ -34,15 +35,7 @@ public class StoreManager : MonoBehaviour
         previousCategory = activeCategory;
 
         ReloadCategory(activeCategory);        
-    }
-
-    private void SpawnItem(GameItem gameItem, GameObject category)
-    {
-        GameObject spawnedGameItem = Instantiate(gameItemPrefab, category.transform);
-        spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(gameItem.gameLogo, gameItem.gameName);
-
-        spawnedGameItems.Add(spawnedGameItem);
-    }
+    }   
 
     private void ReloadCategory(GameObject activeCategory)
     {
@@ -65,5 +58,18 @@ public class StoreManager : MonoBehaviour
                 }
             }
         }
+    }
+
+    private void SpawnItem(GameItem gameItem, GameObject category)
+    {
+        GameObject spawnedGameItem = Instantiate(gameItemPrefab, category.transform);
+        spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(gameItem.gameLogo, gameItem.gameName);
+        
+        // Check if item has already been added to library. If yes then disable add button.
+        if (PlayerPrefs.GetString("library").Contains(gameItem.gameName)) 
+        {
+            spawnedGameItem.GetComponent<StoreItem>().addButton.SetActive(false);
+        }
+        spawnedGameItems.Add(spawnedGameItem);
     }
 }

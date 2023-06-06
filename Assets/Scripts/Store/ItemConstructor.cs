@@ -15,5 +15,6 @@ public class ItemConstructor : MonoBehaviour
     {
         itemImage.sprite = sprite;
         itemName.text = name;
+        gameObject.name = name;
     }    
 }

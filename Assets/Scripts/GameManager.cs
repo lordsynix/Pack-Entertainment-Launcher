@@ -14,11 +14,11 @@ public class GameManager : MonoBehaviour
     public void AddGameToLibrary(string gameName)
     {
         string libraryString = PlayerPrefs.GetString("library");
-        PlayerPrefs.SetString("library", libraryString + gameName + ",");
+        PlayerPrefs.SetString("library", libraryString + gameName + ";");
     }
 
     public string[] GetlibraryItems()
     {
-        return PlayerPrefs.GetString("library").Split(",");
+        return PlayerPrefs.GetString("library").Split(";");
     }
 }

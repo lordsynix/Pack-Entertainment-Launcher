@@ -9,6 +9,6 @@ public class StoreItem : MonoBehaviour
     public void OnClickAdd()
     {
         addButton.SetActive(false);
-        GameManager.instance.AddGameToLibrary(GetComponent<ItemConstructor>().itemName.text);
+        GameManager.instance.AddGameToLibrary(gameObject.name);
     }
 }
