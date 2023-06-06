@@ -12,6 +12,8 @@ public class StoreManager : MonoBehaviour
     private GameObject previousCategory;
     public Text categoryTag;
 
+    private List<GameObject> spawnedGameItems = new List<GameObject>();
+
     private void Start()
     {
         HorizontalLayoutGroup[] categories = GetComponentsInChildren<HorizontalLayoutGroup>();
@@ -24,34 +26,48 @@ public class StoreManager : MonoBehaviour
         }
     }
 
-    public void OnClickCategory(GameObject inputCategory)
+    public void OnClickCategory(GameObject activeCategory)
     {
-        categoryTag.text = inputCategory.name;
-        inputCategory.SetActive(true);
+        categoryTag.text = activeCategory.name;
         previousCategory.SetActive(false);
-        previousCategory = inputCategory;
+        activeCategory.SetActive(true);        
+        previousCategory = activeCategory;
 
-        // Search all game items in specified category
-        foreach (GameItem gameItem in gameItems)
-        {
-            string[] categories = gameItem.genres;
-            foreach (string category in categories)
-            {
-                if (inputCategory.name == category)
-                {
-                    SpawnItem(gameItem, inputCategory);
-                }
-                else
-                {
-                    Debug.Log("Name of category not found!");
-                }
-            }
-        }
+        ReloadCategory(activeCategory);        
     }
 
     private void SpawnItem(GameItem gameItem, GameObject category)
     {
         GameObject spawnedGameItem = Instantiate(gameItemPrefab, category.transform);
         spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(gameItem.gameLogo, gameItem.gameName);
+
+        spawnedGameItems.Add(spawnedGameItem);
+    }
+
+    private void ReloadCategory(GameObject activeCategory)
+    {
+        // Empty current category
+        foreach (GameObject spawnedGameItem in spawnedGameItems)
+        {
+            Destroy(spawnedGameItem);
+        }
+        spawnedGameItems.Clear();
+
+        // Search all game items in specified category and spawn them
+        foreach (GameItem gameItem in gameItems)
+        {
+            string[] categories = gameItem.genres;
+            foreach (string category in categories)
+            {
+                if (activeCategory.name == category)
+                {
+                    SpawnItem(gameItem, activeCategory);
+                }
+                else
+                {
+                    Debug.Log("Items in category not found!");
+                }
+            }
+        }
     }
 }
