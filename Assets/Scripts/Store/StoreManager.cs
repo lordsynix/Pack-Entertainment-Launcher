@@ -63,10 +63,6 @@ public class StoreManager : MonoBehaviour
                 {
                     SpawnItem(gameItem, activeCategory);
                 }
-                else
-                {
-                    Debug.Log("Items in category not found!");
-                }
             }
         }
     }
