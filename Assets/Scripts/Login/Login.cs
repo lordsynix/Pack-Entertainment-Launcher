@@ -2,11 +2,13 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Networking;
+using System.Text.RegularExpressions;
 
 public class Login : MonoBehaviour
 {
     [SerializeField] private string loginEndpoint = "http://127.0.0.1:13756/account/login";
     [SerializeField] private string createEndpoint = "http://127.0.0.1:13756/account/create";
+    private const string PASSWORD_REGEX = "(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,24})";
 
     [SerializeField] private InputField usernameInputField;
     [SerializeField] private InputField passwordInputField;
@@ -37,14 +39,14 @@ public class Login : MonoBehaviour
 
         if (username.Length < 3 || username.Length > 24)
         {
-            alertText.text = "Invalid username";
+            alertText.text = "Invalid credentials";
             ActivateButtons(true);
             yield break;
         }
 
-        if (password.Length < 3 || password.Length > 24)
+        if (!Regex.IsMatch(password, PASSWORD_REGEX))
         {
-            alertText.text = "Invalid password";
+            alertText.text = "Invalid credentials";
             ActivateButtons(true);
             yield break;
         }
@@ -111,7 +113,7 @@ public class Login : MonoBehaviour
             yield break;
         }
 
-        if (password.Length < 3 || password.Length > 24)
+        if (!Regex.IsMatch(password, PASSWORD_REGEX))
         {
             alertText.text = "Invalid password";
             ActivateButtons(true);
@@ -153,6 +155,9 @@ public class Login : MonoBehaviour
                         break;
                     case 2:
                         alertText.text = "Username is already taken";
+                        break;
+                    case 3:
+                        alertText.text = "Password is unsafe";
                         break;
                     default:
                         alertText.text = "Corruption detected";
