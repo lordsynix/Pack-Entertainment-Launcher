@@ -51,10 +51,11 @@ public class Login : MonoBehaviour
             yield break;
         }
 
-        WWWForm form = new WWWForm();
+        WWWForm form = new WWWForm(); 
         form.AddField("rUsername", username);
         form.AddField("rPassword", password);
 
+        Debug.Log("Requesting on " + loginEndpoint);
         UnityWebRequest request = UnityWebRequest.Post(loginEndpoint, form);
         var handler = request.SendWebRequest();
 
@@ -63,7 +64,7 @@ public class Login : MonoBehaviour
         {
             startTime += Time.deltaTime;
 
-            if (startTime > 10.0f) break;
+            if (startTime > 100.0f) break;
 
             yield return null;
         }
@@ -95,6 +96,7 @@ public class Login : MonoBehaviour
         else
         {
             alertText.text = "Error connecting to the server...";
+            Debug.Log(request.result.ToString());
             ActivateButtons(true);
         }
 
@@ -123,7 +125,8 @@ public class Login : MonoBehaviour
         WWWForm form = new WWWForm();
         form.AddField("rUsername", username);
         form.AddField("rPassword", password);
-
+        
+        Debug.Log("Requesting on " + createEndpoint);
         UnityWebRequest request = UnityWebRequest.Post(createEndpoint, form);
         var handler = request.SendWebRequest();
 
@@ -132,7 +135,7 @@ public class Login : MonoBehaviour
         {
             startTime += Time.deltaTime;
 
-            if (startTime > 10.0f) break;
+            if (startTime > 100.0f) break;
 
             yield return null;
         }
@@ -167,6 +170,7 @@ public class Login : MonoBehaviour
         }
         else
         {
+            Debug.Log(request.result);
             alertText.text = "Error connecting to the server...";
         }
 

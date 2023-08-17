@@ -12,8 +12,6 @@ public class LibraryManager : MonoBehaviour
     public Transform gameItemParent;
     public GameObject gameItemPrefab;
 
-    public StoreManager store;
-
     public GameObject gameInformationWindow;
     public Text achievementCount;
     public Text playtime;
@@ -27,7 +25,7 @@ public class LibraryManager : MonoBehaviour
         instance = this;
     }
 
-    private void OnEnable()
+    private void Start()
     {
         SpawnItems();
         ResetSelection();
@@ -35,13 +33,14 @@ public class LibraryManager : MonoBehaviour
 
     private void SpawnItems()
     {
-        Debug.Log("Attempting to spawn items...");
-        string[] gameNames = GameManager.instance.GetlibraryItems();  
+        var gameNames = new List<string>(GameManager.instance.GetlibraryItems());
+        gameNames.RemoveAt(gameNames.Count - 1);
+
         foreach (string gameName in gameNames)
         {
             Debug.Log("Checking for name: " + gameName);
             // Check if item exists in store. If yes replicate the item in library
-            foreach (GameItem gameItem in store.gameItems)
+            foreach (GameItem gameItem in StoreManager.instance.gameItems)
             {
                 if (gameName == gameItem.gameName && !CheckDuplicate(gameName))
                 {
@@ -78,7 +77,7 @@ public class LibraryManager : MonoBehaviour
         {
             string[] gameInformation = PlayerPrefs.GetString(game.name).Split(";");
             achievementCount.text = gameInformation[0];
-            playtime.text = "Playtime: " +gameInformation[0] + "hours.";
+            playtime.text = "Playtime: " + gameInformation[0] + "hours.";
         }
         else
         {
@@ -113,6 +112,32 @@ public class LibraryManager : MonoBehaviour
         else
         {
             gameInformationWindow.SetActive(false);
+        }
+    }
+
+    public void SetGameButtons()
+    {
+        foreach (Game game in DataManager.Games)
+        {
+            if (game.IsDownloaded)
+            {
+                if (game.IsUpdated)
+                {
+                    Debug.Log("Is updated");
+                    // Buttontext = Play
+                }
+                else
+                {
+                    Debug.Log("Isn't updated");
+                    // Buttontext = Update
+                }
+            }
+            else
+            {
+                // Buttontext = Download
+
+                StartCoroutine(Installer.Download(game));
+            }
         }
     }
 }

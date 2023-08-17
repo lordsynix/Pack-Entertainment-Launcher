@@ -1647,8 +1647,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a66f618588e0e4cb84de401260f796, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  loginEndpoint: http://127.0.0.1:13756/account/login
-  createEndpoint: http://127.0.0.1:13756/account/create
+  loginEndpoint: https://loginbackend-xs66.onrender.com/account/login
+  createEndpoint: https://loginbackend-xs66.onrender.com/account/create
   usernameInputField: {fileID: 1621473870}
   passwordInputField: {fileID: 359611633}
   alertText: {fileID: 1235842853}

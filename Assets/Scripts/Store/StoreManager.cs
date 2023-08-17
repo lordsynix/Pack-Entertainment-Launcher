@@ -5,6 +5,9 @@ using UnityEngine.UI;
 
 public class StoreManager : MonoBehaviour
 {
+    public static StoreManager instance;
+
+    public GameObject store;
     public GameItem[] gameItems;
     public GameObject gameItemParent;
     public GameObject gameItemPrefab;
@@ -12,11 +15,16 @@ public class StoreManager : MonoBehaviour
     private GameObject previousCategory;
     public Text categoryTag;
 
-    private List<GameObject> spawnedGameItems = new List<GameObject>();
+    private List<GameObject> spawnedGameItems = new();
+
+    private void Awake()
+    {
+        instance = this;
+    }
 
     private void OnEnable()
     {
-        HorizontalLayoutGroup[] categories = GetComponentsInChildren<HorizontalLayoutGroup>();
+        HorizontalLayoutGroup[] categories = store.GetComponentsInChildren<HorizontalLayoutGroup>();
         foreach (HorizontalLayoutGroup category in categories)
         {
             if (category.enabled == true)
