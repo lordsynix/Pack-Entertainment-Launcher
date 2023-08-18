@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
 using System;
+using System.Diagnostics;
+using System.IO;
 
 public class LibraryManager : MonoBehaviour
 {
@@ -13,32 +15,31 @@ public class LibraryManager : MonoBehaviour
     public GameObject gameItemPrefab;
 
     public GameObject gameInformationWindow;
+    public Button gameButton;
+    public Button deleteButton;
     public Text achievementCount;
     public Text playtime;
 
     private GameObject previousSelected;
 
-    private List<GameObject> libraryCollection = new List<GameObject>();
+    private Dictionary<string, GameObject> libraryDict = new();
+    private List<GameObject> libraryCollection = new();
 
     private void Awake()
     {
         instance = this;
+
+        gameButton.onClick.AddListener(OnMainButton);
+        deleteButton.onClick.AddListener(OnDeleteButton);
     }
 
-    private void Start()
-    {
-        SpawnItems();
-        ResetSelection();
-    }
-
-    private void SpawnItems()
+    public void SpawnItems()
     {
         var gameNames = new List<string>(GameManager.instance.GetlibraryItems());
         gameNames.RemoveAt(gameNames.Count - 1);
 
         foreach (string gameName in gameNames)
         {
-            Debug.Log("Checking for name: " + gameName);
             // Check if item exists in store. If yes replicate the item in library
             foreach (GameItem gameItem in StoreManager.instance.gameItems)
             {
@@ -46,10 +47,13 @@ public class LibraryManager : MonoBehaviour
                 {
                     GameObject spawnedGameItem = Instantiate(gameItemPrefab, gameItemParent);
                     spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(gameItem.gameLogo, gameName);
+
+                    libraryDict.Add(gameName, spawnedGameItem);
                     libraryCollection.Add(spawnedGameItem);
                 }
             }            
-        }    
+        }
+        GameManager.instance.startingScreen.SetActive(false);
     }
 
     private bool CheckDuplicate(string gameName)
@@ -84,6 +88,7 @@ public class LibraryManager : MonoBehaviour
             achievementCount.text = 0.ToString();
             playtime.text = "Playtime: 0 hours.";
         }
+        SetGameButtonText(game.name);
 
         previousSelected = game;
     }
@@ -102,7 +107,7 @@ public class LibraryManager : MonoBehaviour
         ResetSelection();       
     }
 
-    private void ResetSelection()
+    public void ResetSelection()
     {
         if (libraryCollection.Count > 0)
         {
@@ -115,29 +120,86 @@ public class LibraryManager : MonoBehaviour
         }
     }
 
-    public void SetGameButtons()
+    public void SetGameButtonText(string gameName)
     {
-        foreach (Game game in DataManager.Games)
+        if (!DataManager.Games.ContainsKey(gameName)) return;
+
+        var game = DataManager.Games[gameName];
+
+        if (game.IsDownloaded)
         {
-            if (game.IsDownloaded)
+            if (game.IsUpdated)
             {
-                if (game.IsUpdated)
-                {
-                    Debug.Log("Is updated");
-                    // Buttontext = Play
-                }
-                else
-                {
-                    Debug.Log("Isn't updated");
-                    // Buttontext = Update
-                }
+                gameButton.GetComponentInChildren<Text>().text = "Play";
+                deleteButton.gameObject.SetActive(true);
             }
             else
             {
-                // Buttontext = Download
-
-                StartCoroutine(Installer.Download(game));
+                gameButton.GetComponentInChildren<Text>().text = "Update";
+                deleteButton.gameObject.SetActive(true);
             }
+        }
+        else
+        {
+            gameButton.GetComponentInChildren<Text>().text = "Download";
+            deleteButton.gameObject.SetActive(false);
+        }
+    }
+
+    public void OnMainButton()
+    {
+        Game game = DataManager.Games[previousSelected.name];
+
+        if (game.IsDownloaded)
+        {
+            if (game.IsUpdated)
+            {
+                // Launch Game
+                gameButton.GetComponentInChildren<Text>().text = "Running...";
+                LaunchGame(game);
+            }
+            else
+            {
+                // Update Game
+                gameButton.GetComponentInChildren<Text>().text = "Updating...";
+                Installer.Delete(game, true); // Deletes and redownloads the game.
+            }
+        }
+        else
+        {
+            // Download Game
+            gameButton.GetComponentInChildren<Text>().text = "Downloading...";
+            StartCoroutine(Installer.Download(game));
+        }
+    }
+
+    public void OnDeleteButton()
+    {
+        Game game = DataManager.Games[previousSelected.name];
+
+        Installer.Delete(game);
+    }
+
+    public void LaunchGame(Game game, string _exeFile = "")
+    {
+        string exeFile;
+        if (string.IsNullOrEmpty(_exeFile))
+        {
+            exeFile = Path.Combine(Installer.CreateGamesFolder(), Path.Combine(game.Name, $"{game.Name}.exe"));
+        }
+        else
+        {
+            exeFile = _exeFile;
+        }
+        
+        try
+        {
+            Process process = Process.Start(exeFile);
+            // TODO get playtime when user quits application.
+        }
+        catch (Exception ex)
+        {
+            UnityEngine.Debug.LogException(ex);
         }
     }
 }

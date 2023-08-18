@@ -10,16 +10,17 @@ public static class Installer
 {
     public static bool IsDownloading { get; private set; }
 
-    private static string gamesPath;
+    public static string gamesPath;
 
-    public static IEnumerator Download(Game game)
+    public static IEnumerator Download(Game game, bool launcher = false)
     {
-        Debug.Log($"Downloading {game.Name}");
+        if (!launcher) Debug.Log($"Downloading {game.Name}");
         IsDownloading = true;
-        CreateFolders();
+        CreateGamesFolder();
         yield return new WaitForSeconds(1f);
-        
-        using UnityWebRequest request = UnityWebRequest.Get(game.URL);
+
+        var url = launcher ? DataManager.LauncherURL : game.URL;
+        using UnityWebRequest request = UnityWebRequest.Get(url);
 
         // Downloading...
 
@@ -32,34 +33,66 @@ public static class Installer
         else
         {
             // Download Zip-File
-            string gameFolder = gamesPath + game.Name;
-            string filePath = Path.Combine(gameFolder, $"{game.Name}.zip");
-
-            if (!Directory.Exists(gameFolder))
-            {
-                Directory.CreateDirectory(gameFolder);
-            }
-
-            Debug.Log(filePath);
             byte[] zipData = request.downloadHandler.data;
-            File.WriteAllBytes(filePath, zipData);
 
-            // Extract Zip-File
-            ZipFile.ExtractToDirectory(filePath, gameFolder);
-
-            while (!File.Exists(Path.Combine(gameFolder, $"{game.Name}.exe")))
+            if (launcher)
             {
-                // Extracting...
+
             }
-
-            // Delete Zip-File
-            Directory.Delete(Path.GetDirectoryName(filePath), true);
-
-            OnDownloadComplete(game);
+            else
+            {
+                ProcessDownload(game, launcher, zipData);
+            }
         }
     }
 
-    private static void OnDownloadComplete(Game game)
+    private static void ProcessDownload(Game game, bool launcher, byte[] zipData)
+    {
+        var version = DataManager.LauncherVersion;
+        string folderPath = launcher ? Path.Combine(gamesPath + "/../", $"Launcher-{version}") :  Path.Combine(gamesPath, game.Name);
+        string filePath = launcher ? Path.Combine(folderPath, $"Launcher-{version}.zip") : Path.Combine(folderPath, $"{game.Name}.zip");
+
+        if (!Directory.Exists(folderPath))
+        {
+            Directory.CreateDirectory(folderPath);
+            Debug.Log($"Created Folder at {folderPath}");
+        }
+
+        File.WriteAllBytes(filePath, zipData);
+        Debug.Log($"Stored ZipFile at: {filePath}");
+
+        // Extract Zip-File
+        ZipFile.ExtractToDirectory(filePath, folderPath);
+
+        string exeFileLauncher = Path.Combine(folderPath, "PackEntertainmentLauncher.exe");
+        string exeFileGame = Path.Combine(folderPath, $"{game.Name}.exe");
+        while (!File.Exists(launcher ? exeFileLauncher : exeFileGame))
+        {
+            // Extracting...
+        }
+
+        // Delete Zip-File // Access might be denied
+        try
+        {
+            File.Delete(Path.GetDirectoryName(filePath));
+        } 
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+            GameManager.instance.errorHandler.OnError(1003);
+        }
+
+        if (launcher)
+        {
+            OnLauncherDownloaded(exeFileLauncher);
+        }
+        else
+        {
+            OnGameDownloaded(game);
+        }
+    }
+
+    private static void OnGameDownloaded(Game game)
     {
         Debug.Log($"Successfully downloaded {game.Name}");
 
@@ -73,19 +106,90 @@ public static class Installer
         IsDownloading = false;
     }
 
-    private static void CreateFolders()
+    private static void OnLauncherDownloaded(string exeFile)
+    {
+        LibraryManager.instance.LaunchGame(null, exeFile);
+    }
+
+    public static string CreateGamesFolder()
     {
         // Create the Games Folder
         if (Application.isEditor)
         {
             gamesPath = Application.dataPath + "/Games";
-            return;
+            Debug.Log($"Games Folder {gamesPath}");
         }
-        gamesPath = Application.dataPath + "/../../Games/";
+        else
+        {
+            gamesPath = Application.dataPath + "/../../Games/";
+            Debug.Log($"Games Folder {gamesPath}");
+        }
 
         if (!Directory.Exists(gamesPath))
         {
             Directory.CreateDirectory(gamesPath);
+        }
+
+        return gamesPath;
+    }
+
+    public static void Delete(Game game, bool downloadGame = false)
+    {
+        string folderPath = Path.Combine(gamesPath, game.Name);
+
+        if (Directory.Exists(folderPath))
+        {
+            try
+            {
+                Directory.Delete(folderPath, true);
+            }
+            catch
+            {
+                // Access denied
+                GameManager.instance.errorHandler.OnError(1003);
+            }
+        }
+        else
+        {
+            Debug.LogError($"Couldn't find game at: {folderPath}");
+            return;
+        }
+
+        if (downloadGame)
+        {
+            while (Directory.Exists(folderPath))
+            {
+                // Deleting...
+            }
+
+            Download(game);
+        }
+    }
+
+    public static void DeleteOldLauncherVersions()
+    {
+        string launchersFolder = gamesPath + "/../";
+        string[] subfolders = Directory.GetDirectories(launchersFolder);
+
+        foreach (string subfolder in subfolders)
+        {
+            if (subfolder.Contains("Launcher-"))
+            {
+                if (!subfolder.Contains(DataManager.LauncherVersion))
+                {
+                    try
+                    {
+                        // Delete old launcher version
+                        Directory.Delete(Path.Combine(launchersFolder, subfolder), true);
+                        Debug.Log($"Deleting old launcher version at: {Path.Combine(launchersFolder, subfolder)}");
+                    }
+                    catch
+                    {
+                        // Access denied
+                        GameManager.instance.errorHandler.OnError(1003);
+                    }
+                }
+            }
         }
     }
 }

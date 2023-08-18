@@ -6,8 +6,12 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
 
+    public GameObject startingScreen;
+    public ErrorHandler errorHandler;
+
     private void Awake()
     {
+        Debug.LogError("Open console");
         instance = this;
 
         StartCoroutine(DataManager.GetData());
@@ -43,10 +47,10 @@ public class GameManager : MonoBehaviour
 
         if (DataManager.Games.Count > 0)
         {
-            foreach (Game game in DataManager.Games)
+            foreach (KeyValuePair<string, Game> game in DataManager.Games)
             {
-                libraryString += game.Name + ";";
-                versionString += game.CurrentVersion + ";";
+                libraryString += game.Value.Name + ";";
+                versionString += game.Value.CurrentVersion + ";";
             }
 
             PlayerPrefs.SetString("library", libraryString);
