@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Networking;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 public class Login : MonoBehaviour
 {
@@ -16,167 +17,66 @@ public class Login : MonoBehaviour
     [SerializeField] private Button loginButton;
     [SerializeField] private Button createButton;
 
-    public void OnLoginClick()
+    public async void OnLoginClick()
     {
         alertText.text = "Signing in...";
         ActivateButtons(false);
 
-        StartCoroutine(TryLogin());
+        await TryLogin();
     }
 
-    public void OnCreateClick()
+    public async void OnCreateClick()
     {
         alertText.text = "Creating account...";
         ActivateButtons(false);
 
-        StartCoroutine(TryCreate());
+        await TryCreate();
+
+        // Call result
     }
 
-    private IEnumerator TryLogin()
+    private async Task TryLogin()
     {
         string username = usernameInputField.text;
         string password = passwordInputField.text;
 
-        if (username.Length < 3 || username.Length > 24)
-        {
-            alertText.text = "Invalid credentials";
-            ActivateButtons(true);
-            yield break;
-        }
-
-        if (!Regex.IsMatch(password, PASSWORD_REGEX))
-        {
-            alertText.text = "Invalid credentials";
-            ActivateButtons(true);
-            yield break;
-        }
-
-        WWWForm form = new WWWForm(); 
-        form.AddField("rUsername", username);
-        form.AddField("rPassword", password);
-
-        Debug.Log("Requesting on " + loginEndpoint);
-        UnityWebRequest request = UnityWebRequest.Post(loginEndpoint, form);
-        var handler = request.SendWebRequest();
-
-        float startTime = 0.0f;
-        while (!handler.isDone)
-        {
-            startTime += Time.deltaTime;
-
-            if (startTime > 100.0f) break;
-
-            yield return null;
-        }
-
-        if (request.result == UnityWebRequest.Result.Success)
-        {
-            LoginResponse response = JsonUtility.FromJson<LoginResponse>(request.downloadHandler.text);
-
-            if (response.code == 0)
-            {
-                ActivateButtons(false);
-                alertText.text = "Welcome " + ((response.data.adminFlag == 1) ? "Admin" : "");
-            }
-            else
-            {
-                switch (response.code)
-                {
-                    case 1:
-                        alertText.text = "Invalid credentials";
-                        ActivateButtons(true);
-                        break;
-                    default:
-                        alertText.text = "Corruption detected";
-                        ActivateButtons(false);
-                        break;
-                }
-            }
-        }
-        else
-        {
-            alertText.text = "Error connecting to the server...";
-            Debug.Log(request.result.ToString());
-            ActivateButtons(true);
-        }
-
-        yield return null;
-    }
-
-    private IEnumerator TryCreate()
-    {
-        string username = usernameInputField.text;
-        string password = passwordInputField.text;
-
-        if (username.Length < 3 || username.Length > 24)
+        /*if (username.Length < 3 || username.Length > 20)
         {
             alertText.text = "Invalid username";
             ActivateButtons(true);
-            yield break;
+            return;
         }
 
         if (!Regex.IsMatch(password, PASSWORD_REGEX))
         {
             alertText.text = "Invalid password";
             ActivateButtons(true);
-            yield break;
-        }
+            return;
+        }*/
 
-        WWWForm form = new WWWForm();
-        form.AddField("rUsername", username);
-        form.AddField("rPassword", password);
-        
-        Debug.Log("Requesting on " + createEndpoint);
-        UnityWebRequest request = UnityWebRequest.Post(createEndpoint, form);
-        var handler = request.SendWebRequest();
+        await AuthManager.Instance.SignInWithUsernamePasswordAsync(username, password);
+    }
 
-        float startTime = 0.0f;
-        while (!handler.isDone)
+    private async Task TryCreate()
+    {
+        string username = usernameInputField.text;
+        string password = passwordInputField.text;
+
+        /*if (username.Length < 3 || username.Length > 24)
         {
-            startTime += Time.deltaTime;
-
-            if (startTime > 100.0f) break;
-
-            yield return null;
+            alertText.text = "Invalid username";
+            ActivateButtons(true);
+            return;
         }
 
-        if (request.result == UnityWebRequest.Result.Success)
+        if (!Regex.IsMatch(password, PASSWORD_REGEX))
         {
-            Debug.Log(request.downloadHandler.text);
-            CreateResponse response = JsonUtility.FromJson<CreateResponse>(request.downloadHandler.text);
+            alertText.text = "Invalid password";
+            ActivateButtons(true);
+            return;
+        }*/
 
-            if (response.code == 0)
-            {
-                alertText.text = "Account has been created";
-            }
-            else
-            {
-                switch (response.code)
-                {
-                    case 1:
-                        alertText.text = "Invalid credentials";
-                        break;
-                    case 2:
-                        alertText.text = "Username is already taken";
-                        break;
-                    case 3:
-                        alertText.text = "Password is unsafe";
-                        break;
-                    default:
-                        alertText.text = "Corruption detected";
-                        break;
-                }
-            }
-        }
-        else
-        {
-            Debug.Log(request.result);
-            alertText.text = "Error connecting to the server...";
-        }
-
-        ActivateButtons(true);
-
-        yield return null;
+        await AuthManager.Instance.SignUpWithUsernamePasswordAsync(username, password);
     }
 
     private void ActivateButtons(bool toggle)
