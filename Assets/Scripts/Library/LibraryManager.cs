@@ -23,7 +23,6 @@ public class LibraryManager : MonoBehaviour
     private GameObject previousSelected;
 
     private Dictionary<string, GameObject> libraryDict = new();
-    private List<GameObject> libraryCollection = new();
 
     private void Awake()
     {
@@ -35,32 +34,40 @@ public class LibraryManager : MonoBehaviour
 
     public void SpawnItems()
     {
-        var gameNames = new List<string>(GameManager.instance.GetlibraryItems());
-        gameNames.RemoveAt(gameNames.Count - 1);
+        libraryDict.Clear();
+        int childCount = gameItemParent.childCount;
 
-        foreach (string gameName in gameNames)
+        for (int i = childCount; i > 0; i--)
         {
+            Destroy(gameItemParent.GetChild(i - 1).gameObject);
+        }
+
+        var libraryGames = DataManager.LibraryGames;
+
+        foreach (var kvp in libraryGames)
+        {
+            string gameName = kvp.Key;
+
             // Check if item exists in store. If yes replicate the item in library
             foreach (GameItem gameItem in StoreManager.instance.gameItems)
             {
-                if (gameName == gameItem.gameName && !CheckDuplicate(gameName))
+                if (gameName == gameItem.Name && !CheckDuplicate(gameName))
                 {
                     GameObject spawnedGameItem = Instantiate(gameItemPrefab, gameItemParent);
-                    spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(gameItem.gameLogo, gameName);
+                    spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(GameManager.instance.defaultLogo, gameName);
 
                     libraryDict.Add(gameName, spawnedGameItem);
-                    libraryCollection.Add(spawnedGameItem);
                 }
-            }            
+            }
         }
-        GameManager.instance.startingScreen.SetActive(false);
+        ResetSelection();
     }
 
     private bool CheckDuplicate(string gameName)
     {
-        foreach (GameObject game in libraryCollection)
+        foreach (var kvp in libraryDict)
         {
-            if (gameName == game.name)
+            if (gameName == kvp.Key)
             {
                 return true;
             }
@@ -95,24 +102,18 @@ public class LibraryManager : MonoBehaviour
 
     public void OnClickDelete()
     {
-        List<string> games = PlayerPrefs.GetString("library").Split(";").ToList();
-        if (games.Contains(previousSelected.name))
-        {
-            games.Remove(previousSelected.name);
-            PlayerPrefs.SetString("library", String.Join(";", games));
-        }       
-
-        libraryCollection.Remove(previousSelected);
+        DataManager.LibraryGames.Remove(previousSelected.name);
+        libraryDict.Remove(previousSelected.name);
         Destroy(previousSelected);
         ResetSelection();       
     }
 
     public void ResetSelection()
     {
-        if (libraryCollection.Count > 0)
+        if (libraryDict.Count > 0)
         {
-            previousSelected = libraryCollection[0];
-            SelectGame(libraryCollection[0]);
+            previousSelected = libraryDict.First().Value;
+            SelectGame(libraryDict.First().Value);
         }
         else
         {
@@ -122,9 +123,9 @@ public class LibraryManager : MonoBehaviour
 
     public void SetGameButtonText(string gameName)
     {
-        if (!DataManager.Games.ContainsKey(gameName)) return;
+        if (!DataManager.LibraryGames.ContainsKey(gameName)) return;
 
-        var game = DataManager.Games[gameName];
+        var game = DataManager.LibraryGames[gameName];
 
         if (game.IsDownloaded)
         {
@@ -148,7 +149,7 @@ public class LibraryManager : MonoBehaviour
 
     public void OnMainButton()
     {
-        Game game = DataManager.Games[previousSelected.name];
+        Game game = DataManager.LibraryGames[previousSelected.name];
 
         if (game.IsDownloaded)
         {
@@ -175,7 +176,7 @@ public class LibraryManager : MonoBehaviour
 
     public void OnDeleteButton()
     {
-        Game game = DataManager.Games[previousSelected.name];
+        Game game = DataManager.LibraryGames[previousSelected.name];
 
         Installer.Delete(game);
     }

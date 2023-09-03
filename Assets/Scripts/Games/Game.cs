@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Game
@@ -7,24 +8,24 @@ public class Game
     public string Name;
     public string URL;
     public string CurrentVersion;
-    public string NewestVersion;
-
+    public string LatestVersion;
+    
     public bool IsDownloaded;
     public bool IsUpdated;
 
-    public Game(string name, string url, string currentVersion = null, string newestVersion = null)
-    {
-        Name = name;
-        URL = url;
-        CurrentVersion = currentVersion;
-        NewestVersion = newestVersion;
+    // TODO Add Achievements, Stats and Playtime
 
-        if (!string.IsNullOrEmpty(NewestVersion) && CurrentVersion == NewestVersion)
+    public void UpdateGame(string url, string latestVersion)
+    {
+        URL = url;
+        LatestVersion = latestVersion;
+
+        if (CurrentVersion == LatestVersion)
         {
             IsDownloaded = true;
             IsUpdated = true;
         }
-        else if (currentVersion != "-1")
+        else if (CurrentVersion != "-1")
         {
             IsDownloaded = true;
             IsUpdated = false;
@@ -34,7 +35,12 @@ public class Game
             IsDownloaded = false;
             IsUpdated = false;
         }
-        Debug.Log($"Created {Name}! CurVersion: {CurrentVersion} NewVersion: {NewestVersion} " +
-            $"Downloaded: {IsDownloaded} Updated: {IsUpdated} URL: {URL}");
+
+        Debug.Log($"Updated {Name}! Downloaded: {IsDownloaded} Updated: {IsUpdated}");
+    }
+
+    public static Game FromJson(string json)
+    {
+        return JsonUtility.FromJson<Game>(json);
     }
 }

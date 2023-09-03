@@ -9,52 +9,37 @@ public class GameManager : MonoBehaviour
     public GameObject startingScreen;
     public ErrorHandler errorHandler;
 
-    private void Awake()
-    {
-        Debug.LogError("Open console");
-        instance = this;
+    public Sprite defaultLogo;
 
-        StartCoroutine(DataManager.GetData());
+    private async void Awake()
+    {
+        instance = this;
+        
+        await DataManager.GetPlayerData();
     }
 
     public void AddGameToLibrary(string gameName, string version = "-1")
     {
-        Debug.Log($"Added {gameName} to Library");
-        string libraryString = PlayerPrefs.GetString("library");
-        PlayerPrefs.SetString("library", libraryString + gameName + ";");
+        foreach (GameItem gameItem in StoreManager.instance.gameItems)
+        {
+            if (gameName == gameItem.Name)
+            {
+                Game game = new()
+                {
+                    Name = gameName,
+                    CurrentVersion = version
+                };
+                game.UpdateGame(gameItem.DownloadURL, gameItem.LatestVersion);
 
-        string versionString = PlayerPrefs.GetString("versions");
-        PlayerPrefs.SetString("versions", versionString + version + ";");
-
-        StartCoroutine(DataManager.GetData());
+                DataManager.LibraryGames.Add(gameName, game);
+            }
+        }
+        LibraryManager.instance.SpawnItems();
     }
 
-    public string[] GetlibraryItems()
-    {
-        return PlayerPrefs.GetString("library").Split(";");
-    }
-
-    private void OnApplicationQuit()
+    private async void OnApplicationQuit()
     {
         Debug.Log("Quiting...");
-        StoreLibraryItems();
-    }
-
-    public void StoreLibraryItems()
-    {
-        string libraryString = "";
-        string versionString = "";
-
-        if (DataManager.Games.Count > 0)
-        {
-            foreach (KeyValuePair<string, Game> game in DataManager.Games)
-            {
-                libraryString += game.Value.Name + ";";
-                versionString += game.Value.CurrentVersion + ";";
-            }
-
-            PlayerPrefs.SetString("library", libraryString);
-            PlayerPrefs.SetString("versions", versionString);
-        }
+        await DataManager.SaveLibraryGames();
     }
 }

@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,7 +11,6 @@ public class StoreManager : MonoBehaviour
 
     public GameObject store;
     public GameItem[] gameItems;
-    public GameObject gameItemParent;
     public GameObject gameItemPrefab;
 
     private GameObject previousCategory;
@@ -22,7 +23,7 @@ public class StoreManager : MonoBehaviour
         instance = this;
     }
 
-    private void OnEnable()
+    public void EnableCategory()
     {
         HorizontalLayoutGroup[] categories = store.GetComponentsInChildren<HorizontalLayoutGroup>();
         foreach (HorizontalLayoutGroup category in categories)
@@ -54,10 +55,15 @@ public class StoreManager : MonoBehaviour
         }
         spawnedGameItems.Clear();
 
+        SetGamesInCategory(activeCategory);
+    }
+
+    public void SetGamesInCategory(GameObject activeCategory)
+    {
         // Search all game items in specified category and spawn them
         foreach (GameItem gameItem in gameItems)
         {
-            string[] categories = gameItem.genres;
+            string[] categories = gameItem.Genres;
             foreach (string category in categories)
             {
                 if (activeCategory.name == category)
@@ -71,10 +77,10 @@ public class StoreManager : MonoBehaviour
     private void SpawnItem(GameItem gameItem, GameObject category)
     {
         GameObject spawnedGameItem = Instantiate(gameItemPrefab, category.transform);
-        spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(gameItem.gameLogo, gameItem.gameName);
+        spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(GameManager.instance.defaultLogo, gameItem.Name);
         
         // Check if item has already been added to library. If yes then disable add button.
-        if (PlayerPrefs.GetString("library").Contains(gameItem.gameName)) 
+        if (DataManager.LibraryGames.ContainsKey(gameItem.Name)) 
         {
             spawnedGameItem.GetComponent<StoreItem>().addButton.SetActive(false);
         }

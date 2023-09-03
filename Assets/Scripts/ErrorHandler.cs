@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,90 +21,112 @@ public class ErrorHandler : MonoBehaviour
         {
             // Connection
             case 1000:
-                // Texts
-                errorHeader.text = "Connection";
-                errorText.text = "Unfortunately, we could not establish an Internet " +
-                                 "connection. Please check your connection and try again.";
-
-                // Details
-                DateTime now = DateTime.Now;
-
-                detail1.text = "Error Code:";
-                detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
-                detail2.text = "Time:";
-                detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"{now.Hour:00}:{now.Minute:00}";
-
-                // Button & Panel
-                errorButton.onClick.AddListener(Quit);
-                errorButton.GetComponentInChildren<Text>().text = "Quit Game";
-                errorPanel.SetActive(true);
+                OnConnectionError(errorCode);
                 break;
 
             // Invalid Version
             case 1001:
-                // Texts
-                errorHeader.text = "Invalid Version";
-                errorText.text = "Good news! There is a more recent version of this application. Since this " +
-                                 "is a Game Launcher you cannot continue using it with an outdated version.";
-
-                // Details
-                detail1.text = "Error Code:";
-                detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
-                detail2.text = "Current Version:";
-                detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = details[0];
-                detail3.text = "Latest Version:";
-                detail3.gameObject.transform.GetChild(0).GetComponent<Text>().text = details[1];
-
-                // Button & Panel
-                errorButton.onClick.AddListener(UpdateLauncher);
-                errorButton.GetComponentInChildren<Text>().text = "Update Launcher";
-                errorPanel.SetActive(true);
+                OnInvalidVersionError(errorCode, details);
                 break;
 
             // Maintenance
             case 1002:
                 // Texts
-                errorHeader.text = "Maintenance";
-                errorText.text = "Our developers are maintaining the infrastructure " +
-                                 "right now. We apologize for the inconvenience.";
-
-                // Details
-                DateTime current = DateTime.Now;
-
-                detail1.text = "Error Code:";
-                detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
-                detail2.text = "Current Time:";
-                detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"{current.Hour:00}:{current.Minute:00}";
-                detail3.text = "Expected Time:";
-                detail3.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"{details[0]}";
-
-                // Button & Panel
-                errorButton.onClick.AddListener(Quit);
-                errorButton.GetComponentInChildren<Text>().text = "Quit Game";
-                errorPanel.SetActive(true);
+                OnMaintenance(errorCode, details);
                 break;
             
             case 1003:
-                // Texts
-                errorHeader.text = "Access to the path denied";
-                errorText.text = "Access to the folder path you selected is denied. Change the path " +
-                                 "during a new installation for more efficient memory usage. ";
-
-                // Details
-                detail1.text = "Error Code:";
-                detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
-                detail2.text = "Suggested Path:";
-                detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"Documents";
-
-                // Button & Panel
-                errorButton.onClick.AddListener(Back);
-                errorButton.GetComponentInChildren<Text>().text = "Back";
-                errorPanel.SetActive(true);
+                OnAccessDeniedError(errorCode);
                 break;
 
             default:
                 break;
         }
+    }
+
+    private void OnConnectionError(int errorCode)
+    {
+        // Texts
+        errorHeader.text = "Connection";
+        errorText.text = "Unfortunately, we could not establish an Internet " +
+                         "connection. Please check your connection and try again.";
+
+        // Details
+        DateTime now = DateTime.Now;
+
+        detail1.text = "Error Code:";
+        detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
+        detail2.text = "Last Checked:";
+        detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"{now.Hour:00}:{now.Minute:00}";
+
+        // Button & Panel
+        errorButton.onClick.AddListener(Quit);
+        errorButton.GetComponentInChildren<Text>().text = "Quit Game";
+        errorPanel.SetActive(true);
+    }
+
+    private void OnInvalidVersionError(int errorCode, string[] details)
+    {
+        // Texts
+        errorHeader.text = "Invalid Version";
+        errorText.text = "Good news! There is a more recent version of this application. Since this " +
+                         "is a Game Launcher you cannot continue using it with an outdated version.";
+
+        // Details
+        DateTime now = DateTime.Now;
+
+        detail1.text = "Error Code:";
+        detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
+        detail2.text = "Current Version:";
+        detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = details[0];
+        detail3.text = "Latest Version:";
+        detail3.gameObject.transform.GetChild(0).GetComponent<Text>().text = details[1];
+
+        // Button & Panel
+        errorButton.onClick.AddListener(UpdateLauncher);
+        errorButton.GetComponentInChildren<Text>().text = "Update Launcher";
+        errorPanel.SetActive(true);
+    }
+
+    private void OnMaintenance(int errorCode, string[] details)
+    {
+        errorHeader.text = "Maintenance";
+        errorText.text = "Our developers are maintaining the infrastructure " +
+                         "right now. We apologize for the inconvenience.";
+
+        // Details
+        DateTime current = DateTime.Now;
+
+        detail1.text = "Error Code:";
+        detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
+        detail2.text = "Current Time:";
+        detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"{current.Hour:00}:{current.Minute:00}";
+        detail3.text = "Expected Time:";
+        detail3.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"{details[0]}";
+
+        // Button & Panel
+        errorButton.onClick.AddListener(Quit);
+        errorButton.GetComponentInChildren<Text>().text = "Quit Game";
+        errorPanel.SetActive(true);
+    }
+
+    private void OnAccessDeniedError(int errorCode)
+    {
+        // Texts
+        errorHeader.text = "Access to the path denied";
+        errorText.text = "Access to the folder path you selected is denied. Change the path " +
+                         "during a new installation for more efficient memory usage. ";
+
+        // Details
+        detail1.text = "Error Code:";
+        detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
+        detail2.text = "Suggested Path:";
+        detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"Documents";
+
+        // Button & Panel
+        errorButton.onClick.AddListener(Back);
+        errorButton.GetComponentInChildren<Text>().text = "Back";
+        errorPanel.SetActive(true);
     }
 
     private void Back()

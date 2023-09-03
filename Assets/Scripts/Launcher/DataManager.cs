@@ -1,99 +1,142 @@
 using System;
-using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using System.Threading.Tasks;
+using Unity.Services.CloudSave;
+using Unity.Services.RemoteConfig;
 
 public static class DataManager
 {
-    public static Dictionary<string, Game> Games = new();
+    public static Dictionary<string, Game> LibraryGames = new();
     public static string LauncherURL;
     public static string LauncherVersion;
 
-    private static readonly string URL = "https://onedrive.live.com/download?resid=5DC2466FF23494E4%21307183&authkey=!AI2NXp2LB61Ebf0";
+    public struct userAttributes { }
+    public struct appAttributes { }
 
-    public static IEnumerator GetData()
+    public static async Task GetPlayerData()
     {
         // Internet connection?
         if (Application.internetReachability == NetworkReachability.NotReachable)
         {
             GameManager.instance.errorHandler.OnError(1000);
-            yield break;
+            return;
         }
 
-        // Web Request
-        UnityWebRequest request = new(URL);
-        request.downloadHandler = new DownloadHandlerBuffer();
-        yield return request.SendWebRequest();
+        // Get all games the player has
+        List<string> keys = await CloudSaveService.Instance.Data.RetrieveAllKeysAsync();
 
-        if (request.result != UnityWebRequest.Result.Success)
+        foreach (string key in keys)
         {
-            Debug.Log(request.error);
+            if (key == "SignUpDate") continue;
+            Dictionary<string, string> data = await CloudSaveService.Instance.Data.LoadAsync(new HashSet<string> { key });
+            Game game = Game.FromJson(data[key]);
+            LibraryGames.Add(game.Name, game);
         }
-        else
-        {
-            // Get Data
-            string[] data = request.downloadHandler.text.Split(' ');
-            ProcessData(data);
-        }
+
+        // Get all games from remote config
+        RemoteConfigService.Instance.FetchCompleted += ApplyRemoteSettings;
+        RemoteConfigService.Instance.FetchConfigs(new userAttributes(), new appAttributes());
+
     }
 
-    private static void ProcessData(string[] data)
+    static void ApplyRemoteSettings(ConfigResponse configResponse)
     {
-        CheckLauncherVersion(data[0]);
+        var data = RemoteConfigService.Instance.appConfig.config;
+        List<GameItem> gameItems = new();
 
-        var games = new List<string>(PlayerPrefs.GetString("library").Split(";"));
-        var versions = new List<string>(PlayerPrefs.GetString("versions").Split(";"));
-
-        games.RemoveAt(games.Count - 1);
-        versions.RemoveAt(versions.Count - 1);
-
-        Games = new();
-        int index = 0;
-        foreach (string gameName in games)
+        foreach (var kvp in data)
         {
-            Debug.Log($"Looping through {gameName}");
+            var jsonValue = kvp.Value;
 
-            foreach (string d in data)
+            if (jsonValue != null)
             {
-                string[] gameData = d.Split(',');
+                string json = jsonValue.ToString();
 
-                if (gameData[0] == gameName)
+                GameItem item = JsonUtility.FromJson<GameItem>(json);
+
+                if (item != null && item.Name != "PackEntertainmentLauncher")
                 {
-                    string version = versions[index];
-                    var newGame = new Game(gameData[0], gameData[2], version, gameData[1]);
-                    Games.Add(gameName, newGame);
-                    break;
+                    gameItems.Add(item);
+                }
+                else
+                {
+                    CheckLauncherVersion(item);
                 }
             }
-            index++;
+        }
+
+        StoreManager.instance.gameItems = gameItems.ToArray();
+        StoreManager.instance.EnableCategory();
+
+        ProcessData();
+    }
+
+    public static async Task SaveLibraryGames()
+    {
+        Dictionary<string, object> convertedDictionary = new();
+
+        foreach(var kvp in LibraryGames)
+        {
+            convertedDictionary.Add(kvp.Key, kvp.Value);
+        }
+
+        await CloudSaveService.Instance.Data.ForceSaveAsync(convertedDictionary);
+    }
+
+    private static void ProcessData()
+    {
+        if (StoreManager.instance.gameItems.Length == 0)
+        {
+            Debug.LogError("Config data request failed");
+            return;
+        }
+
+        // Check Launcher
+        string keyToUpdate = "";
+        foreach (GameItem storeGame in StoreManager.instance.gameItems)
+        {
+            Debug.Log($"Looping through {storeGame.Name}");
+
+            foreach (var kvp in LibraryGames)
+            {
+                Game libraryGame = kvp.Value;
+
+                if (libraryGame.Name == storeGame.Name)
+                {
+                    // Update the latest version and url with the config data
+                    keyToUpdate = kvp.Key;
+                }
+            }
+            if (!string.IsNullOrEmpty(keyToUpdate))
+            {
+                Game game = LibraryGames[keyToUpdate];
+                game.UpdateGame(storeGame.DownloadURL, storeGame.LatestVersion);
+                LibraryGames[keyToUpdate] = game;
+                keyToUpdate = "";
+            }
         }
 
         LibraryManager.instance.SpawnItems();
-        LibraryManager.instance.ResetSelection();
+
+        GameManager.instance.startingScreen.SetActive(false);
     }
 
-    private static void CheckLauncherVersion(string data)
+    private static void CheckLauncherVersion(GameItem launcher)
     {
-        string[] launcherData = data.Split(",");
-
-        if (launcherData[0] == "PackEntertainmentLauncher")
+        if (launcher.Name == "PackEntertainmentLauncher")
         {
-            LauncherVersion = launcherData[2];
-            LauncherURL = launcherData[3];
+            LauncherVersion = launcher.LatestVersion;
+            LauncherURL = launcher.DownloadURL;
 
-            if (launcherData[4] == "true")
-            {
-                // Maintenance
-                string[] details = { launcherData[5] };
-                GameManager.instance.errorHandler.OnError(1002, details);
-            }
+            // Maintenance (Error Code 1002)
 
-            if (Application.version != launcherData[2])
+            if (Application.version != LauncherVersion)
             {
                 // Invalid Version
-                string[] details = { Application.version, launcherData[2] };
+                string[] details = { Application.version, LauncherVersion };
                 GameManager.instance.errorHandler.OnError(1001, details);
             }
 

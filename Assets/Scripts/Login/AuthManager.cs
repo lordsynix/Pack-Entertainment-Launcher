@@ -1,28 +1,104 @@
 using System;
-using System.Security.Authentication;
 using UnityEngine;
 using Unity.Services.Core;
+using Unity.Services.CloudSave;
 using Unity.Services.Authentication;
 using System.Threading.Tasks;
+using UnityEngine.UI;
+using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEngine.SceneManagement;
 
 public class AuthManager : MonoBehaviour
 {
     public static AuthManager Instance;
 
     public GameObject startingScreen;
+    public ErrorHandler errorHandler;
+
+    [SerializeField] private InputField usernameInputField;
+    [SerializeField] private InputField passwordInputField;
+    [SerializeField] private Text alertText;
+    [SerializeField] private Button loginButton;
+    [SerializeField] private Button createButton;
 
     async void Awake()
     {
         Instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        // Internet connection?
+        if (Application.internetReachability == NetworkReachability.NotReachable)
+        {
+            errorHandler.OnError(1000);
+            return;
+        }
 
         try
         {
             await UnityServices.InitializeAsync();
+
+            if (PlayerPrefs.HasKey("username"))
+            {
+                string username = PlayerPrefs.GetString("username");
+                if (PlayerPrefs.HasKey("password"))
+                {
+                    string password = PlayerPrefs.GetString("password");
+                    await SignInWithUsernamePasswordAsync(username, password);
+                    return;
+                }
+            }
+
             startingScreen.SetActive(false);
+            SetButtonState(true);
         }
         catch (Exception ex)
         {
             Debug.LogException(ex);
+        }
+    }
+
+    public async void SignIn()
+    {
+        alertText.text = "Signing in...";
+
+        string username = usernameInputField.text;
+        string password = passwordInputField.text;
+
+        if (username.Length < 3)
+            alertText.text = "Username is too short";
+        else if (username.Length > 20)
+            alertText.text = "Username is too long";
+        else if (password.Length < 8)
+            alertText.text = "Password is too short";
+        else if (password.Length > 30)
+            alertText.text = "Password is too long";
+        else
+        {
+            SetButtonState(false);
+            await SignInWithUsernamePasswordAsync(username, password);
+        }
+    }
+
+    public async void SignUp()
+    {
+        alertText.text = "Signing up...";
+
+        string username = usernameInputField.text;
+        string password = passwordInputField.text;
+
+        if (username.Length < 3)
+            alertText.text = "Username is too short";
+        else if (username.Length > 20)
+            alertText.text = "Username is too long";
+        else if (password.Length < 8)
+            alertText.text = "Password is too short";
+        else if (password.Length > 30)
+            alertText.text = "Password is too long";
+        else
+        {
+            SetButtonState(false);
+            await SignUpWithUsernamePasswordAsync(username, password);
         }
     }
 
@@ -31,17 +107,43 @@ public class AuthManager : MonoBehaviour
         try
         {
             await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(username, password);
-            Debug.Log("SignUp is successful.");
+
+            alertText.text = "forwarding...";
+
+            PlayerPrefs.SetString("username", username);
+            PlayerPrefs.SetString("password", password);
+
+            SceneManager.LoadScene(1);
         }
-        catch (Unity.Services.Authentication.AuthenticationException ex)
+        catch (AuthenticationException ex)
         {
-            Debug.Log("Authentication Exception " + ex.ErrorCode);
             Debug.LogException(ex);
+            Debug.Log($"Authentication Error Code: {ex.ErrorCode}");
+
+            if (ex.ErrorCode == 10002)
+            {
+                // Invalid credentials
+                alertText.text = "Invalid credentials";
+            }
+            else if (ex.ErrorCode == 10003)
+            {
+                // Entity exists
+                alertText.text = "Username already exists";
+            }
+            else
+            {
+                alertText.text = "Failed. Please try again";
+            }
+
+            SetButtonState(true);
         }
         catch (RequestFailedException ex)
         {
-            Debug.Log("Request Exception");
             Debug.LogException(ex);
+            Debug.Log($"RequestFailed");
+
+            alertText.text = "Invalid password";
+            SetButtonState(true);
         }
     }
 
@@ -50,41 +152,35 @@ public class AuthManager : MonoBehaviour
         try
         {
             await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(username, password);
-            Debug.Log("SignIn is successful.");
+
+            alertText.text = "forwarding...";
+
+            SceneManager.LoadScene(1);
         }
-        catch (Unity.Services.Authentication.AuthenticationException ex)
+        catch (AuthenticationException ex)
         {
             Debug.LogException(ex);
+            Debug.Log($"Authentication Error Code: {ex.ErrorCode}");
+
+            alertText.text = "Failed. Please try again";
+            SetButtonState(true);
+            startingScreen.SetActive(false);
         }
         catch (RequestFailedException ex)
         {
             Debug.LogException(ex);
+            Debug.Log($"RequestFailed");
+
+            alertText.text = "Invalid credentials";
+            SetButtonState(true);
+            startingScreen.SetActive(false);
         }
     }
 
-    void SetupEvents()
+    private void SetButtonState(bool toggle)
     {
-        AuthenticationService.Instance.SignedIn += () => {
-            // Shows how to get a playerID
-            Debug.Log($"PlayerID: {AuthenticationService.Instance.PlayerId}");
-
-            // Shows how to get an access token
-            Debug.Log($"Access Token: {AuthenticationService.Instance.AccessToken}");
-
-        };
-
-        AuthenticationService.Instance.SignInFailed += (err) => {
-            Debug.LogError(err);
-        };
-
-        AuthenticationService.Instance.SignedOut += () => {
-            Debug.Log("Player signed out.");
-        };
-
-        AuthenticationService.Instance.Expired += () =>
-        {
-            Debug.Log("Player session could not be refreshed and expired.");
-        };
+        loginButton.interactable = toggle;
+        createButton.interactable = toggle;
     }
 
     public void Quit()

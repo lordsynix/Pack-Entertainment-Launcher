@@ -98,10 +98,11 @@ public static class Installer
 
         game.IsDownloaded = true;
         game.IsUpdated = true;
-        game.CurrentVersion = game.NewestVersion;
+        game.CurrentVersion = game.LatestVersion;
 
         // Store new game
-        GameManager.instance.StoreLibraryItems();
+        DataManager.LibraryGames[game.Name] = game;
+        _ = DataManager.SaveLibraryGames();
 
         IsDownloading = false;
     }
@@ -136,7 +137,7 @@ public static class Installer
     public static void Delete(Game game, bool downloadGame = false)
     {
         string folderPath = Path.Combine(gamesPath, game.Name);
-
+        
         if (Directory.Exists(folderPath))
         {
             try

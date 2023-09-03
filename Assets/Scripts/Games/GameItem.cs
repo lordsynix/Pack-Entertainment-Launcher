@@ -1,13 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.UI;
 
 [System.Serializable]
 public class GameItem
 {
-    public string gameName;
-    public Sprite gameLogo;
-    public string[] genres;
+    public string Name;
+    public string[] Genres;
 
+    public string LatestVersion;
+    public string DownloadURL;
 }
