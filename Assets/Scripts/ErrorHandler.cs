@@ -39,6 +39,10 @@ public class ErrorHandler : MonoBehaviour
                 OnAccessDeniedError(errorCode);
                 break;
 
+            case 1004:
+                OnGameLaunchError(errorCode, details);
+                break;
+
             default:
                 break;
         }
@@ -129,6 +133,25 @@ public class ErrorHandler : MonoBehaviour
         errorPanel.SetActive(true);
     }
 
+    private void OnGameLaunchError(int errorCode, string[] details)
+    {
+        // Texts
+        errorHeader.text = "Game launch failed";
+        errorText.text = $"{details[0]} could not be started. Please try to reinstall " +
+                         $"the game or move the files to the correct folder.";
+
+        // Details
+        detail1.text = "Error Code:";
+        detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
+        detail2.text = "Game Name:";
+        detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"{details[0]}";
+
+        // Button & Panel
+        errorButton.onClick.AddListener(Back);
+        errorButton.GetComponentInChildren<Text>().text = "Back";
+        errorPanel.SetActive(true);
+    }
+
     private void Back()
     {
         errorPanel.SetActive(false);
@@ -142,6 +165,8 @@ public class ErrorHandler : MonoBehaviour
 
     private void UpdateLauncher()
     {
-        Debug.Log("Updating Launcher...");
+        GameManager.instance.updateScreen.SetActive(true);
+        Back();
+        Installer.Download(null, true);
     }
 }

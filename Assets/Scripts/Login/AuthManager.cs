@@ -34,6 +34,17 @@ public class AuthManager : MonoBehaviour
             return;
         }
 
+        if (!PlayerPrefs.HasKey("DeviceToken"))
+        {
+            string uniqueToken = GenerateUniqueToken();
+
+            PlayerPrefs.SetString("DeviceToken", uniqueToken);
+
+            PlayerPrefs.Save();
+
+            Debug.Log($"Device Token safed: {uniqueToken}");
+        }
+        
         try
         {
             await UnityServices.InitializeAsync();
@@ -47,7 +58,9 @@ public class AuthManager : MonoBehaviour
                     await SignInWithUsernamePasswordAsync(username, password);
                     return;
                 }
+                else Debug.Log("no password found");
             }
+            else Debug.Log("no username found");
 
             startingScreen.SetActive(false);
             SetButtonState(true);
@@ -155,6 +168,9 @@ public class AuthManager : MonoBehaviour
 
             alertText.text = "forwarding...";
 
+            PlayerPrefs.SetString("username", username);
+            PlayerPrefs.SetString("password", password);
+
             SceneManager.LoadScene(1);
         }
         catch (AuthenticationException ex)
@@ -186,5 +202,10 @@ public class AuthManager : MonoBehaviour
     public void Quit()
     {
         Application.Quit();
+    }
+
+    private string GenerateUniqueToken()
+    {
+        return DateTime.Now.ToString("yyyyMMddHHmmss");
     }
 }

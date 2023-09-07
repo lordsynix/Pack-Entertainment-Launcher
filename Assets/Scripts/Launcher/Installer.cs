@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 using System;
+using Unity.VisualScripting;
 
 public static class Installer
 {
@@ -35,14 +36,7 @@ public static class Installer
             // Download Zip-File
             byte[] zipData = request.downloadHandler.data;
 
-            if (launcher)
-            {
-
-            }
-            else
-            {
-                ProcessDownload(game, launcher, zipData);
-            }
+            ProcessDownload(game, launcher, zipData);
         }
     }
 
@@ -62,9 +56,10 @@ public static class Installer
         Debug.Log($"Stored ZipFile at: {filePath}");
 
         // Extract Zip-File
+        LibraryManager.instance.SetLibraryButton("Extracting...");
         ZipFile.ExtractToDirectory(filePath, folderPath);
 
-        string exeFileLauncher = Path.Combine(folderPath, "PackEntertainmentLauncher.exe");
+        string exeFileLauncher = Path.Combine(folderPath, "Launcher.exe");
         string exeFileGame = Path.Combine(folderPath, $"{game.Name}.exe");
         while (!File.Exists(launcher ? exeFileLauncher : exeFileGame))
         {
@@ -74,11 +69,12 @@ public static class Installer
         // Delete Zip-File // Access might be denied
         try
         {
-            File.Delete(Path.GetDirectoryName(filePath));
+            File.Delete(filePath);
         } 
         catch (Exception ex)
         {
             Debug.LogException(ex);
+            Debug.LogError(ex.ToString());
             GameManager.instance.errorHandler.OnError(1003);
         }
 
@@ -105,6 +101,7 @@ public static class Installer
         _ = DataManager.SaveLibraryGames();
 
         IsDownloading = false;
+        LibraryManager.instance.SetLibraryButtonTextWithGameState(game.Name);
     }
 
     private static void OnLauncherDownloaded(string exeFile)
@@ -136,6 +133,9 @@ public static class Installer
 
     public static void Delete(Game game, bool downloadGame = false)
     {
+        gamesPath = Application.dataPath + "/../../Games/";
+        if (!Directory.Exists(gamesPath)) return;
+
         string folderPath = Path.Combine(gamesPath, game.Name);
         
         if (Directory.Exists(folderPath))
@@ -143,10 +143,16 @@ public static class Installer
             try
             {
                 Directory.Delete(folderPath, true);
+
+                DataManager.LibraryGames.Remove(game.Name);
+                _ = DataManager.SaveLibraryGames();
+
+                LibraryManager.instance.OnDeletionCompleted(game);
             }
-            catch
+            catch (Exception ex)
             {
                 // Access denied
+                Debug.LogError(ex.ToString());
                 GameManager.instance.errorHandler.OnError(1003);
             }
         }
@@ -169,24 +175,25 @@ public static class Installer
 
     public static void DeleteOldLauncherVersions()
     {
-        string launchersFolder = gamesPath + "/../";
+        string launchersFolder = Application.dataPath + "/../../";
         string[] subfolders = Directory.GetDirectories(launchersFolder);
-
+        
         foreach (string subfolder in subfolders)
         {
-            if (subfolder.Contains("Launcher-"))
+            if (Path.GetFileName(subfolder).Contains("Launcher-"))
             {
-                if (!subfolder.Contains(DataManager.LauncherVersion))
+                if (Path.GetFileName(subfolder) != "Launcher-" + DataManager.LauncherVersion)
                 {
                     try
                     {
                         // Delete old launcher version
-                        Directory.Delete(Path.Combine(launchersFolder, subfolder), true);
-                        Debug.Log($"Deleting old launcher version at: {Path.Combine(launchersFolder, subfolder)}");
+                        Directory.Delete(subfolder, true);
+                        Debug.Log($"Deleting old launcher version at: {subfolder}");
                     }
-                    catch
+                    catch (Exception ex)
                     {
                         // Access denied
+                        Debug.LogError(ex.ToString());
                         GameManager.instance.errorHandler.OnError(1003);
                     }
                 }

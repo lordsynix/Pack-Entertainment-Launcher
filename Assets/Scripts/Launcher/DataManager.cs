@@ -30,10 +30,14 @@ public static class DataManager
 
         foreach (string key in keys)
         {
-            if (key == "SignUpDate") continue;
             Dictionary<string, string> data = await CloudSaveService.Instance.Data.LoadAsync(new HashSet<string> { key });
             Game game = Game.FromJson(data[key]);
-            LibraryGames.Add(game.Name, game);
+
+            if (PlayerPrefs.GetString("DeviceToken") == game.DeviceToken)
+            {
+                Debug.Log("Loaded game");
+                LibraryGames.Add(game.Name, game);
+            } // TODO: Sync data from other devices
         }
 
         // Get all games from remote config
@@ -76,13 +80,25 @@ public static class DataManager
 
     public static async Task SaveLibraryGames()
     {
+        List<string> keys = await CloudSaveService.Instance.Data.RetrieveAllKeysAsync();
+        string deviceToken = PlayerPrefs.GetString("DeviceToken");
+
+        // Delete cloud game informations of this device
+        foreach (var key in keys)
+        {
+            if (key.Contains(deviceToken))
+            {
+                await CloudSaveService.Instance.Data.ForceDeleteAsync(key);
+            }
+        }
+
+        // Save cloud game informations of this device
         Dictionary<string, object> convertedDictionary = new();
 
         foreach(var kvp in LibraryGames)
         {
-            convertedDictionary.Add(kvp.Key, kvp.Value);
+            convertedDictionary.Add(kvp.Key + '_' + deviceToken, kvp.Value);
         }
-
         await CloudSaveService.Instance.Data.ForceSaveAsync(convertedDictionary);
     }
 
@@ -98,8 +114,6 @@ public static class DataManager
         string keyToUpdate = "";
         foreach (GameItem storeGame in StoreManager.instance.gameItems)
         {
-            Debug.Log($"Looping through {storeGame.Name}");
-
             foreach (var kvp in LibraryGames)
             {
                 Game libraryGame = kvp.Value;
@@ -138,6 +152,7 @@ public static class DataManager
                 // Invalid Version
                 string[] details = { Application.version, LauncherVersion };
                 GameManager.instance.errorHandler.OnError(1001, details);
+                return; // TODO Error in DeleteOldLauncherVersions()
             }
 
             Installer.DeleteOldLauncherVersions();

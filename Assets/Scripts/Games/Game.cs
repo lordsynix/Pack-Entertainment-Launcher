@@ -5,6 +5,8 @@ using UnityEngine;
 
 public class Game
 {
+    public string DeviceToken;
+
     public string Name;
     public string URL;
     public string CurrentVersion;
@@ -17,6 +19,7 @@ public class Game
 
     public void UpdateGame(string url, string latestVersion)
     {
+        DeviceToken = PlayerPrefs.GetString("DeviceToken");
         URL = url;
         LatestVersion = latestVersion;
 

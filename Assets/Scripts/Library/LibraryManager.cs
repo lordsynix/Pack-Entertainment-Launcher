@@ -21,6 +21,8 @@ public class LibraryManager : MonoBehaviour
     public Text playtime;
 
     private GameObject previousSelected;
+    private Process process;
+    private Game activeGame;
 
     private Dictionary<string, GameObject> libraryDict = new();
 
@@ -30,6 +32,19 @@ public class LibraryManager : MonoBehaviour
 
         gameButton.onClick.AddListener(OnMainButton);
         deleteButton.onClick.AddListener(OnDeleteButton);
+    }
+
+    private void Update()
+    {
+        if (process != null)
+        {
+            if (process.HasExited)
+            {
+                process = null;
+
+                SetLibraryButtonTextWithGameState(activeGame.Name);
+            }
+        }
     }
 
     public void SpawnItems()
@@ -95,17 +110,9 @@ public class LibraryManager : MonoBehaviour
             achievementCount.text = 0.ToString();
             playtime.text = "Playtime: 0 hours.";
         }
-        SetGameButtonText(game.name);
+        SetLibraryButtonTextWithGameState(game.name);
 
         previousSelected = game;
-    }
-
-    public void OnClickDelete()
-    {
-        DataManager.LibraryGames.Remove(previousSelected.name);
-        libraryDict.Remove(previousSelected.name);
-        Destroy(previousSelected);
-        ResetSelection();       
     }
 
     public void ResetSelection()
@@ -121,7 +128,12 @@ public class LibraryManager : MonoBehaviour
         }
     }
 
-    public void SetGameButtonText(string gameName)
+    public void SetLibraryButton(string text)
+    {
+        gameButton.GetComponentInChildren<Text>().text = text;
+    }
+
+    public void SetLibraryButtonTextWithGameState(string gameName)
     {
         if (!DataManager.LibraryGames.ContainsKey(gameName)) return;
 
@@ -181,6 +193,14 @@ public class LibraryManager : MonoBehaviour
         Installer.Delete(game);
     }
 
+    public void OnDeletionCompleted(Game game)
+    {
+        libraryDict.Remove(game.Name);
+        Destroy(previousSelected);
+        ResetSelection();
+        StoreManager.instance.EnableCategory();
+    }
+
     public void LaunchGame(Game game, string _exeFile = "")
     {
         string exeFile;
@@ -195,12 +215,21 @@ public class LibraryManager : MonoBehaviour
         
         try
         {
-            Process process = Process.Start(exeFile);
+            ProcessStartInfo startInfo = new()
+            {
+                FileName = exeFile,
+                Arguments = "-username " + PlayerPrefs.GetString("username")
+            };
+
+            process = Process.Start(startInfo);
+            activeGame = game;
+
             // TODO get playtime when user quits application.
         }
-        catch (Exception ex)
+        catch
         {
-            UnityEngine.Debug.LogException(ex);
+            var details = new string[] { game.Name };
+            GameManager.instance.errorHandler.OnError(1004, details);
         }
     }
 }

@@ -6,6 +6,7 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
 
+    public GameObject updateScreen;
     public GameObject startingScreen;
     public ErrorHandler errorHandler;
 
@@ -41,5 +42,10 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("Quiting...");
         await DataManager.SaveLibraryGames();
+    }
+
+    public void Quit()
+    {
+        Application.Quit();
     }
 }
