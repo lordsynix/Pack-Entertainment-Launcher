@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -9,6 +10,8 @@ public class GameManager : MonoBehaviour
     public GameObject updateScreen;
     public GameObject startingScreen;
     public ErrorHandler errorHandler;
+
+    public Text updateStateText;
 
     public Sprite defaultLogo;
 
@@ -47,5 +50,10 @@ public class GameManager : MonoBehaviour
     public void Quit()
     {
         Application.Quit();
+    }
+
+    public void ChangeUpdateState(string text)
+    {
+        updateStateText.text = text;
     }
 }

@@ -17,6 +17,13 @@ public class ErrorHandler : MonoBehaviour
 
     public void OnError(int errorCode, string[] details = null)
     {
+        detail1.text = "Error Code:";
+        detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
+        detail2.text = "";
+        detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = "";
+        detail3.text = "";
+        detail3.gameObject.transform.GetChild(0).GetComponent<Text>().text = "";
+
         switch (errorCode)
         {
             // Connection
@@ -167,6 +174,6 @@ public class ErrorHandler : MonoBehaviour
     {
         GameManager.instance.updateScreen.SetActive(true);
         Back();
-        Installer.Download(null, true);
+        StartCoroutine(Installer.Download(null, true));
     }
 }

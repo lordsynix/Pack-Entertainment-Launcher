@@ -8,6 +8,7 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine.SceneManagement;
+using System.Runtime.CompilerServices;
 
 public class AuthManager : MonoBehaviour
 {
@@ -15,6 +16,10 @@ public class AuthManager : MonoBehaviour
 
     public GameObject startingScreen;
     public ErrorHandler errorHandler;
+
+    private string username;
+    private string password;
+    private bool usernameFieldActive = false;
 
     [SerializeField] private InputField usernameInputField;
     [SerializeField] private InputField passwordInputField;
@@ -44,17 +49,24 @@ public class AuthManager : MonoBehaviour
 
             Debug.Log($"Device Token safed: {uniqueToken}");
         }
-        
+
         try
         {
             await UnityServices.InitializeAsync();
 
+            // Check if launcher with credentials in args
+            if (ArgsContainCredentials())
+            {
+                await SignInWithUsernamePasswordAsync(username, password);
+                return;
+            }
+
             if (PlayerPrefs.HasKey("username"))
             {
-                string username = PlayerPrefs.GetString("username");
+                username = PlayerPrefs.GetString("username");
                 if (PlayerPrefs.HasKey("password"))
                 {
-                    string password = PlayerPrefs.GetString("password");
+                    password = PlayerPrefs.GetString("password");
                     await SignInWithUsernamePasswordAsync(username, password);
                     return;
                 }
@@ -64,11 +76,68 @@ public class AuthManager : MonoBehaviour
 
             startingScreen.SetActive(false);
             SetButtonState(true);
+            SelectInputField(true);
         }
         catch (Exception ex)
         {
             Debug.LogException(ex);
         }
+    }
+
+    private void Start()
+    {
+        if (!Application.isEditor)
+        {
+            string launcherExecutablePath = Installer.CreateGamesFolder() + "../Launcher-" + Application.version + "/Pack Launcher.exe";
+
+            // Create new desktop shortcut icon
+            DesktopShortcut.Main("Pack Launcher", launcherExecutablePath);
+        }
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            SelectInputField(!usernameFieldActive);
+        }
+    }
+
+    private void SelectInputField(bool firstField)
+    {
+        if (firstField)
+        {
+            usernameInputField.ActivateInputField();
+            usernameFieldActive = true;
+        }
+        else
+        {
+            passwordInputField.ActivateInputField();
+            usernameFieldActive = false;
+        }
+    }
+    private bool ArgsContainCredentials()
+    {
+        string[] cmdArgs = Environment.GetCommandLineArgs();
+
+        for (int i = 0; i < cmdArgs.Length; i++)
+        {
+            if (cmdArgs[i] == "-username")
+            {
+                username = cmdArgs[i];
+                PlayerPrefs.SetString("username", username);
+            }
+            if (cmdArgs[i] == "-password")
+            {
+                password = cmdArgs[i];
+                PlayerPrefs.SetString("password", password);
+            }
+        }
+        if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+        {
+            return true;
+        }
+        else return false;
     }
 
     public async void SignIn()

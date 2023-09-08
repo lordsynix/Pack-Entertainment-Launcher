@@ -152,7 +152,7 @@ public static class DataManager
                 // Invalid Version
                 string[] details = { Application.version, LauncherVersion };
                 GameManager.instance.errorHandler.OnError(1001, details);
-                return; // TODO Error in DeleteOldLauncherVersions()
+                return;
             }
 
             Installer.DeleteOldLauncherVersions();

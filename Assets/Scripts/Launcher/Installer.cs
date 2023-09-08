@@ -15,11 +15,13 @@ public static class Installer
 
     public static IEnumerator Download(Game game, bool launcher = false)
     {
-        if (!launcher) Debug.Log($"Downloading {game.Name}");
-        IsDownloading = true;
-        CreateGamesFolder();
-        yield return new WaitForSeconds(1f);
+        if (IsDownloading) yield break;
 
+        if (!launcher) Debug.Log($"Downloading {game.Name}");
+        else GameManager.instance.ChangeUpdateState("Initialize Update...");
+        IsDownloading = true;
+        _ = CreateGamesFolder();
+        
         var url = launcher ? DataManager.LauncherURL : game.URL;
         using UnityWebRequest request = UnityWebRequest.Get(url);
 
@@ -30,11 +32,14 @@ public static class Installer
         if (request.result != UnityWebRequest.Result.Success)
         {
             Debug.Log(request.error);
+            if (launcher) GameManager.instance.ChangeUpdateState("Update failed");
+            IsDownloading = false;
         }
         else
         {
             // Download Zip-File
             byte[] zipData = request.downloadHandler.data;
+            if (launcher) GameManager.instance.ChangeUpdateState("Processing Download...");
 
             ProcessDownload(game, launcher, zipData);
         }
@@ -43,7 +48,7 @@ public static class Installer
     private static void ProcessDownload(Game game, bool launcher, byte[] zipData)
     {
         var version = DataManager.LauncherVersion;
-        string folderPath = launcher ? Path.Combine(gamesPath + "/../", $"Launcher-{version}") :  Path.Combine(gamesPath, game.Name);
+        string folderPath = launcher ? Path.Combine(gamesPath + "../", $"Launcher-{version}") :  Path.Combine(gamesPath, game.Name);
         string filePath = launcher ? Path.Combine(folderPath, $"Launcher-{version}.zip") : Path.Combine(folderPath, $"{game.Name}.zip");
 
         if (!Directory.Exists(folderPath))
@@ -56,13 +61,17 @@ public static class Installer
         Debug.Log($"Stored ZipFile at: {filePath}");
 
         // Extract Zip-File
-        LibraryManager.instance.SetLibraryButton("Extracting...");
+        if (!launcher) LibraryManager.instance.SetLibraryButton("Extracting...");
+        else GameManager.instance.ChangeUpdateState("Extracting data...");
         ZipFile.ExtractToDirectory(filePath, folderPath);
 
-        string exeFileLauncher = Path.Combine(folderPath, "Launcher.exe");
-        string exeFileGame = Path.Combine(folderPath, $"{game.Name}.exe");
+        string exeFileLauncher = "";
+        string exeFileGame = "";
+        if (launcher) exeFileLauncher = Path.Combine(folderPath, "Pack Launcher.exe");
+        else exeFileGame = Path.Combine(folderPath, $"{game.Name}.exe");
         while (!File.Exists(launcher ? exeFileLauncher : exeFileGame))
         {
+            if (launcher) GameManager.instance.ChangeUpdateState("Extracting...");
             // Extracting...
         }
 
@@ -75,7 +84,8 @@ public static class Installer
         {
             Debug.LogException(ex);
             Debug.LogError(ex.ToString());
-            GameManager.instance.errorHandler.OnError(1003);
+            if (!launcher) GameManager.instance.errorHandler.OnError(1003);
+            else GameManager.instance.ChangeUpdateState("Couldn't delete file...");
         }
 
         if (launcher)
@@ -106,7 +116,8 @@ public static class Installer
 
     private static void OnLauncherDownloaded(string exeFile)
     {
-        LibraryManager.instance.LaunchGame(null, exeFile);
+        GameManager.instance.ChangeUpdateState("Starting launcher...");
+        LibraryManager.instance.LaunchLauncher(exeFile);
     }
 
     public static string CreateGamesFolder()
@@ -175,6 +186,9 @@ public static class Installer
 
     public static void DeleteOldLauncherVersions()
     {
+        // Only delete older versions if application is the newest version
+        if (Application.version != DataManager.LauncherVersion) return;
+
         string launchersFolder = Application.dataPath + "/../../";
         string[] subfolders = Directory.GetDirectories(launchersFolder);
         

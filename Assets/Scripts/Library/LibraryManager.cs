@@ -201,24 +201,18 @@ public class LibraryManager : MonoBehaviour
         StoreManager.instance.EnableCategory();
     }
 
-    public void LaunchGame(Game game, string _exeFile = "")
+    public void LaunchGame(Game game)
     {
-        string exeFile;
-        if (string.IsNullOrEmpty(_exeFile))
-        {
-            exeFile = Path.Combine(Installer.CreateGamesFolder(), Path.Combine(game.Name, $"{game.Name}.exe"));
-        }
-        else
-        {
-            exeFile = _exeFile;
-        }
+        if (game == null) return;
+
+        string exeFile = Path.Combine(Installer.CreateGamesFolder(), Path.Combine(game.Name, $"{game.Name}.exe"));
         
         try
         {
             ProcessStartInfo startInfo = new()
             {
                 FileName = exeFile,
-                Arguments = "-username " + PlayerPrefs.GetString("username")
+                Arguments = $"-username {PlayerPrefs.GetString("username")} -password {PlayerPrefs.GetString("password")}"
             };
 
             process = Process.Start(startInfo);
@@ -228,7 +222,29 @@ public class LibraryManager : MonoBehaviour
         }
         catch
         {
-            var details = new string[] { game.Name };
+            string[] details;
+            if (game != null) details = new string[] { game.Name };
+            else details = new string[] { "Launcher" };
+            GameManager.instance.errorHandler.OnError(1004, details);
+        }
+    }
+
+    public void LaunchLauncher(string exeFile)
+    {
+        try
+        {
+            ProcessStartInfo startInfo = new()
+            {
+                FileName = exeFile,
+                Arguments = $"-username {PlayerPrefs.GetString("username")} -password {PlayerPrefs.GetString("password")}"
+            };
+
+            process = Process.Start(startInfo);
+            Application.Quit();
+        }
+        catch
+        {
+            var details = new string[] { "Launcher" };
             GameManager.instance.errorHandler.OnError(1004, details);
         }
     }
