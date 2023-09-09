@@ -158,7 +158,7 @@ public static class Installer
                 DataManager.LibraryGames.Remove(game.Name);
                 _ = DataManager.SaveLibraryGames();
 
-                LibraryManager.instance.OnDeletionCompleted(game);
+                if (!downloadGame) LibraryManager.instance.OnDeletionCompleted(game);
             }
             catch (Exception ex)
             {
@@ -180,7 +180,7 @@ public static class Installer
                 // Deleting...
             }
 
-            Download(game);
+            GameManager.instance.StartCoroutine(Download(game));
         }
     }
 

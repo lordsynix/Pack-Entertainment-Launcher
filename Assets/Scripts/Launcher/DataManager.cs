@@ -30,7 +30,9 @@ public static class DataManager
 
         foreach (string key in keys)
         {
+            string deviceToken = PlayerPrefs.GetString("DeviceToken");
             Dictionary<string, string> data = await CloudSaveService.Instance.Data.LoadAsync(new HashSet<string> { key });
+
             Game game = Game.FromJson(data[key]);
 
             if (PlayerPrefs.GetString("DeviceToken") == game.DeviceToken)
@@ -38,6 +40,17 @@ public static class DataManager
                 Debug.Log("Loaded game");
                 LibraryGames.Add(game.Name, game);
             } // TODO: Sync data from other devices
+        }
+
+        // Create player profile
+        if (keys.Contains("Profile"))
+        {
+            var data = await CloudSaveService.Instance.Data.LoadAsync(new HashSet<string> { "Profile" });
+            LoadProfile(data["Profile"]);
+        }
+        else
+        {
+            LoadProfile("");
         }
 
         // Get all games from remote config
@@ -78,6 +91,11 @@ public static class DataManager
         ProcessData();
     }
 
+    static void LoadProfile(string json)
+    {
+        Profile.FromJson(json);
+    }
+
     public static async Task SaveLibraryGames()
     {
         List<string> keys = await CloudSaveService.Instance.Data.RetrieveAllKeysAsync();
@@ -95,11 +113,19 @@ public static class DataManager
         // Save cloud game informations of this device
         Dictionary<string, object> convertedDictionary = new();
 
+        Profile profile = ProfileManager.Instance.GetPlayerProfile();
+        if (profile != null)
+        {
+            convertedDictionary.Add("Profile", profile);
+        }
+        else Debug.LogError("Player Profile is null");
+
         foreach(var kvp in LibraryGames)
         {
             convertedDictionary.Add(kvp.Key + '_' + deviceToken, kvp.Value);
         }
         await CloudSaveService.Instance.Data.ForceSaveAsync(convertedDictionary);
+        Debug.Log("Profile and Games information saved!");
     }
 
     private static void ProcessData()

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine.SceneManagement;
 using System.Runtime.CompilerServices;
+using System.IO;
 
 public class AuthManager : MonoBehaviour
 {
@@ -48,6 +49,24 @@ public class AuthManager : MonoBehaviour
             PlayerPrefs.Save();
 
             Debug.Log($"Device Token safed: {uniqueToken}");
+
+            try
+            {
+                string gamesPath = Path.Combine(Application.dataPath + "/../../Games");
+
+                if (Directory.Exists(gamesPath))
+                {
+                    Directory.Delete(gamesPath, true);
+                }
+                else
+                {
+                    Debug.LogError($"{gamesPath} does not exist");
+                }
+            }
+            catch
+            {
+                errorHandler.OnError(1003);
+            }
         }
 
         try
@@ -101,6 +120,11 @@ public class AuthManager : MonoBehaviour
         {
             SelectInputField(!usernameFieldActive);
         }
+
+        if (Input.GetKeyUp(KeyCode.KeypadEnter))
+        {
+            SignIn();
+        }
     }
 
     private void SelectInputField(bool firstField)
@@ -116,6 +140,7 @@ public class AuthManager : MonoBehaviour
             usernameFieldActive = false;
         }
     }
+
     private bool ArgsContainCredentials()
     {
         string[] cmdArgs = Environment.GetCommandLineArgs();
