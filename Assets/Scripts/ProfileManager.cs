@@ -75,14 +75,17 @@ public class ProfileManager : MonoBehaviour
 
     public void OnClickProfileTab(GameObject tabWindow)
     {
-        tabWindow.SetActive(true);
-        ProfileTabTag.text = tabWindow.name;
-
-        if (previousSelected != null)
+        if (previousSelected != tabWindow)
         {
-            previousSelected.SetActive(false);
-        }
+            tabWindow.SetActive(true);
+            ProfileTabTag.text = tabWindow.name;
 
-        previousSelected = tabWindow;
+            if (previousSelected != null)
+            {
+                previousSelected.SetActive(false);
+            }
+
+            previousSelected = tabWindow;
+        }
     }
 }
