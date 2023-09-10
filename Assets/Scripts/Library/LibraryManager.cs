@@ -23,6 +23,7 @@ public class LibraryManager : MonoBehaviour
     private GameObject previousSelected;
     private Process process;
     private Game activeGame;
+    private float startTime;
 
     private Dictionary<string, GameObject> libraryDict = new();
 
@@ -41,6 +42,14 @@ public class LibraryManager : MonoBehaviour
             if (process.HasExited)
             {
                 process = null;
+
+                // Calculate the total elapsed time
+                double playtime = activeGame.PlaytimeInMinutes;
+                float elapsedTimeInSeconds = Time.realtimeSinceStartup - startTime;
+
+                int hours = Mathf.FloorToInt(elapsedTimeInSeconds / 3600);
+                int minutes = Mathf.FloorToInt((elapsedTimeInSeconds - hours *  3600) / 60);
+                SetGameStats(activeGame, hours, minutes);
 
                 SetLibraryButtonTextWithGameState(activeGame.Name);
             }
@@ -96,23 +105,38 @@ public class LibraryManager : MonoBehaviour
         gameInformationWindow.SetActive(true);
         previousSelected.GetComponent<LibraryItem>().background.color = new Color(0.16f, 0.16f, 0.16f);
         game.GetComponent<LibraryItem>().background.color = new Color(0.4f, 0.4f, 0.4f);
-        
+
 
         // Load achievements and playtime
-        if (PlayerPrefs.HasKey(game.name))
-        {
-            string[] gameInformation = PlayerPrefs.GetString(game.name).Split(";");
-            achievementCount.text = gameInformation[0];
-            playtime.text = "Playtime: " + gameInformation[0] + "hours.";
-        }
-        else
-        {
-            achievementCount.text = 0.ToString();
-            playtime.text = "Playtime: 0 hours.";
-        }
+        SetGameStats(DataManager.LibraryGames[game.name]);
         SetLibraryButtonTextWithGameState(game.name);
 
         previousSelected = game;
+    }
+
+    private void SetGameStats(Game game, int _hours = -1, int _minutes = -1)
+    {
+        if (_hours == -1 && _minutes == -1)
+        {
+            int hours = Mathf.FloorToInt((float)game.PlaytimeInMinutes / 60);
+            int minutes = Mathf.FloorToInt(((float)game.PlaytimeInMinutes - hours * 60) / 60);
+
+            playtime.text = $"Playtime: {hours} hours and {minutes} minutes";
+        }
+        else
+        {
+            int hours = Mathf.FloorToInt((float)game.PlaytimeInMinutes / 60) + _hours;
+            int minutes = Mathf.FloorToInt(((float)game.PlaytimeInMinutes - hours * 60) / 60) + _minutes;
+            if (minutes > 59)
+            {
+                hours++;
+                minutes -= 60;
+            }
+            playtime.text = $"Playtime: {hours} hours and {minutes} minutes";
+            game.PlaytimeInMinutes = hours * 60 + minutes;
+            DataManager.LibraryGames[game.Name] = game;
+        }
+
     }
 
     public void ResetSelection()
@@ -217,6 +241,7 @@ public class LibraryManager : MonoBehaviour
 
             process = Process.Start(startInfo);
             activeGame = game;
+            startTime = Time.realtimeSinceStartup;
 
             // TODO get playtime when user quits application.
         }

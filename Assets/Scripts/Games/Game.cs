@@ -1,34 +1,94 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 
 public class Game
 {
-    public string DeviceToken;
-
     public string Name;
     public string URL;
-    public string CurrentVersion;
+    public List<CurrentVersion> CurrentVersions;
     public string LatestVersion;
     
     public bool IsDownloaded;
     public bool IsUpdated;
 
+    public double PlaytimeInMinutes;
+
+    [Serializable]
+    public class CurrentVersion
+    {
+        public string Key;
+        public string Value;
+    }
+
     // TODO Add Achievements, Stats and Playtime
 
-    public void UpdateGame(string url, string latestVersion)
+    public string GetCurrentVersion()
     {
-        DeviceToken = PlayerPrefs.GetString("DeviceToken");
+        string currentVersion = "";
+
+        if (CurrentVersions.Count == 0)
+        {
+            Debug.LogError("Current Versions are empty");
+            return null;
+        }
+
+        foreach (var kvp in CurrentVersions)
+        {
+            if (kvp.Key == PlayerPrefs.GetString("DeviceToken")) 
+            {
+                currentVersion = kvp.Value;
+            }
+        }
+
+        if (string.IsNullOrEmpty(currentVersion))
+        {
+            // Game doesn't exists on this device
+            return "-1";
+        }
+
+        return currentVersion;
+    }
+
+    public void UpdateCurrentVersion(string version)
+    {
+        string deviceToken = PlayerPrefs.GetString("DeviceToken");
+        foreach (var kvp in CurrentVersions)
+        {
+            if (kvp.Key == deviceToken)
+            {
+                CurrentVersions.Remove(kvp);
+            }
+        }
+        CurrentVersion curVersion = new() { Key = deviceToken, Value = version };
+        CurrentVersions.Add(curVersion);
+    }
+
+    public void UpdateGame(string url, string latestVersion, string _currentVersion)
+    {
         URL = url;
         LatestVersion = latestVersion;
+        string currentVersion;
 
-        if (CurrentVersion == LatestVersion)
+        if (string.IsNullOrEmpty(_currentVersion) )
+        {
+            currentVersion = GetCurrentVersion();
+        }
+        else
+        {
+            UpdateCurrentVersion(_currentVersion);
+            currentVersion = _currentVersion;
+        }
+
+        if (currentVersion == LatestVersion)
         {
             IsDownloaded = true;
             IsUpdated = true;
         }
-        else if (CurrentVersion != "-1")
+        else if (currentVersion != "-1")
         {
             IsDownloaded = true;
             IsUpdated = false;
@@ -38,8 +98,6 @@ public class Game
             IsDownloaded = false;
             IsUpdated = false;
         }
-
-        Debug.Log($"Updated {Name}! Downloaded: {IsDownloaded} Updated: {IsUpdated}");
     }
 
     public static Game FromJson(string json)

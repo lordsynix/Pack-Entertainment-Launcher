@@ -60,7 +60,7 @@ public class Profile
             Device updatedDevice = new(SystemInfo.deviceName, deviceToken, SystemInfo.deviceType.ToString());
             profile.Devices.Add(updatedDevice);
 
-            Debug.Log($"Device with the name {SystemInfo.deviceName} updated.");
+            Debug.Log($"Profile updated");
         }
 
         else
@@ -69,7 +69,7 @@ public class Profile
             Device newDevice = new(SystemInfo.deviceName, deviceToken, SystemInfo.deviceType.ToString());
             profile.Devices.Add(newDevice);
 
-            Debug.Log($"Device with the name {SystemInfo.deviceName} created.");
+            Debug.Log($"Profile created");
         }
     }
 }

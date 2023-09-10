@@ -25,24 +25,10 @@ public static class DataManager
             return;
         }
 
-        // Get all games the player has
+        // Get player's data keys
         List<string> keys = await CloudSaveService.Instance.Data.RetrieveAllKeysAsync();
 
-        foreach (string key in keys)
-        {
-            string deviceToken = PlayerPrefs.GetString("DeviceToken");
-            Dictionary<string, string> data = await CloudSaveService.Instance.Data.LoadAsync(new HashSet<string> { key });
-
-            Game game = Game.FromJson(data[key]);
-
-            if (PlayerPrefs.GetString("DeviceToken") == game.DeviceToken)
-            {
-                Debug.Log("Loaded game");
-                LibraryGames.Add(game.Name, game);
-            } // TODO: Sync data from other devices
-        }
-
-        // Create player profile
+        // Load player profile
         if (keys.Contains("Profile"))
         {
             var data = await CloudSaveService.Instance.Data.LoadAsync(new HashSet<string> { "Profile" });
@@ -51,6 +37,21 @@ public static class DataManager
         else
         {
             LoadProfile("");
+        }
+
+        // Load player's games
+        foreach (string key in keys)
+        {
+            if (key.Contains("Profile")) continue;
+
+            // Load players game data
+            Dictionary<string, string> data = await CloudSaveService.Instance.Data.LoadAsync(new HashSet<string> { key });
+
+            Game game = Game.FromJson(data[key]);
+            
+            LibraryGames.Add(game.Name, game);
+            
+            // TODO: Sync data from other devices
         }
 
         // Get all games from remote config
@@ -85,6 +86,7 @@ public static class DataManager
             }
         }
 
+        Debug.Log("Store items loaded");
         StoreManager.instance.gameItems = gameItems.ToArray();
         StoreManager.instance.EnableCategory();
 
@@ -98,21 +100,10 @@ public static class DataManager
 
     public static async Task SaveLibraryGames()
     {
-        List<string> keys = await CloudSaveService.Instance.Data.RetrieveAllKeysAsync();
-        string deviceToken = PlayerPrefs.GetString("DeviceToken");
-
-        // Delete cloud game informations of this device
-        foreach (var key in keys)
-        {
-            if (key.Contains(deviceToken))
-            {
-                await CloudSaveService.Instance.Data.ForceDeleteAsync(key);
-            }
-        }
-
-        // Save cloud game informations of this device
+        // Store data in JSON format
         Dictionary<string, object> convertedDictionary = new();
 
+        // Save profile
         Profile profile = ProfileManager.Instance.GetPlayerProfile();
         if (profile != null)
         {
@@ -120,12 +111,13 @@ public static class DataManager
         }
         else Debug.LogError("Player Profile is null");
 
+        // Save games
         foreach(var kvp in LibraryGames)
         {
-            convertedDictionary.Add(kvp.Key + '_' + deviceToken, kvp.Value);
+            convertedDictionary.Add(kvp.Key, kvp.Value);
         }
         await CloudSaveService.Instance.Data.ForceSaveAsync(convertedDictionary);
-        Debug.Log("Profile and Games information saved!");
+        Debug.Log("Profile and Games saved!");
     }
 
     private static void ProcessData()
@@ -153,14 +145,14 @@ public static class DataManager
             if (!string.IsNullOrEmpty(keyToUpdate))
             {
                 Game game = LibraryGames[keyToUpdate];
-                game.UpdateGame(storeGame.DownloadURL, storeGame.LatestVersion);
+                game.UpdateGame(storeGame.DownloadURL, storeGame.LatestVersion, null);
                 LibraryGames[keyToUpdate] = game;
                 keyToUpdate = "";
             }
         }
 
+        Debug.Log("Library items loaded");
         LibraryManager.instance.SpawnItems();
-
         GameManager.instance.startingScreen.SetActive(false);
     }
 

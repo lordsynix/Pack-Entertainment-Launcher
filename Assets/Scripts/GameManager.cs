@@ -31,9 +31,9 @@ public class GameManager : MonoBehaviour
                 Game game = new()
                 {
                     Name = gameName,
-                    CurrentVersion = version
+                    CurrentVersions = new()
                 };
-                game.UpdateGame(gameItem.DownloadURL, gameItem.LatestVersion);
+                game.UpdateGame(gameItem.DownloadURL, gameItem.LatestVersion, version);
 
                 DataManager.LibraryGames.Add(gameName, game);
             }

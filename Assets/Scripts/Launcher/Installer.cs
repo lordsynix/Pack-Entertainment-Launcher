@@ -104,7 +104,7 @@ public static class Installer
 
         game.IsDownloaded = true;
         game.IsUpdated = true;
-        game.CurrentVersion = game.LatestVersion;
+        game.UpdateCurrentVersion(game.LatestVersion);
 
         // Store new game
         DataManager.LibraryGames[game.Name] = game;
