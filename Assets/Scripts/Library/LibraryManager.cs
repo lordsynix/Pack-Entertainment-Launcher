@@ -44,12 +44,10 @@ public class LibraryManager : MonoBehaviour
                 process = null;
 
                 // Calculate the total elapsed time
-                double playtime = activeGame.PlaytimeInMinutes;
                 float elapsedTimeInSeconds = Time.realtimeSinceStartup - startTime;
 
-                int hours = Mathf.FloorToInt(elapsedTimeInSeconds / 3600);
-                int minutes = Mathf.FloorToInt((elapsedTimeInSeconds - hours *  3600) / 60);
-                SetGameStats(activeGame, hours, minutes);
+                int minutes = Mathf.FloorToInt(elapsedTimeInSeconds / 60);
+                SetGameStats(activeGame, minutes);
 
                 SetLibraryButtonTextWithGameState(activeGame.Name);
             }
@@ -96,7 +94,7 @@ public class LibraryManager : MonoBehaviour
                 return true;
             }
         }
-        return false;        
+        return false;
     }
 
     public void SelectGame(GameObject game)
@@ -114,29 +112,23 @@ public class LibraryManager : MonoBehaviour
         previousSelected = game;
     }
 
-    private void SetGameStats(Game game, int _hours = -1, int _minutes = -1)
+    private void SetGameStats(Game game, int _minutes = -1)
     {
-        if (_hours == -1 && _minutes == -1)
-        {
-            int hours = Mathf.FloorToInt((float)game.PlaytimeInMinutes / 60);
-            int minutes = Mathf.FloorToInt(((float)game.PlaytimeInMinutes - hours * 60) / 60);
+        double playtimeInMinutes = game.PlaytimeInMinutes;
 
-            playtime.text = $"Playtime: {hours} hours and {minutes} minutes";
-        }
-        else
+        if (_minutes != -1)
         {
-            int hours = Mathf.FloorToInt((float)game.PlaytimeInMinutes / 60) + _hours;
-            int minutes = Mathf.FloorToInt(((float)game.PlaytimeInMinutes - hours * 60) / 60) + _minutes;
-            if (minutes > 59)
-            {
-                hours++;
-                minutes -= 60;
-            }
-            playtime.text = $"Playtime: {hours} hours and {minutes} minutes";
-            game.PlaytimeInMinutes = hours * 60 + minutes;
-            DataManager.LibraryGames[game.Name] = game;
+            playtimeInMinutes += _minutes;
         }
 
+        int hours = Mathf.FloorToInt((float)playtimeInMinutes / 60);
+        int minutes = (int)playtimeInMinutes - 60 * hours;
+
+        playtime.text = $"{hours} hours and {minutes} minutes";
+
+        game.PlaytimeInMinutes = playtimeInMinutes;
+        DataManager.LibraryGames[game.Name] = game;
+        UnityEngine.Debug.Log($"Updated playtime for {game.Name} to {game.PlaytimeInMinutes}");
     }
 
     public void ResetSelection()
@@ -167,18 +159,18 @@ public class LibraryManager : MonoBehaviour
         {
             if (game.IsUpdated)
             {
-                gameButton.GetComponentInChildren<Text>().text = "Play";
+                gameButton.GetComponentInChildren<Text>().text = "PLAY";
                 deleteButton.gameObject.SetActive(true);
             }
             else
             {
-                gameButton.GetComponentInChildren<Text>().text = "Update";
+                gameButton.GetComponentInChildren<Text>().text = "UPDATE";
                 deleteButton.gameObject.SetActive(true);
             }
         }
         else
         {
-            gameButton.GetComponentInChildren<Text>().text = "Download";
+            gameButton.GetComponentInChildren<Text>().text = "DOWNLOAD";
             deleteButton.gameObject.SetActive(false);
         }
     }
@@ -192,20 +184,20 @@ public class LibraryManager : MonoBehaviour
             if (game.IsUpdated)
             {
                 // Launch Game
-                gameButton.GetComponentInChildren<Text>().text = "Running...";
+                gameButton.GetComponentInChildren<Text>().text = "RUNNING...";
                 LaunchGame(game);
             }
             else
             {
                 // Update Game
-                gameButton.GetComponentInChildren<Text>().text = "Updating...";
+                gameButton.GetComponentInChildren<Text>().text = "UPDATING...";
                 Installer.Delete(game, true); // Deletes and redownloads the game.
             }
         }
         else
         {
             // Download Game
-            gameButton.GetComponentInChildren<Text>().text = "Downloading...";
+            gameButton.GetComponentInChildren<Text>().text = "DOWNLOADING...";
             StartCoroutine(Installer.Download(game));
         }
     }
@@ -230,7 +222,7 @@ public class LibraryManager : MonoBehaviour
         if (game == null) return;
 
         string exeFile = Path.Combine(Installer.CreateGamesFolder(), Path.Combine(game.Name, $"{game.Name}.exe"));
-        
+
         try
         {
             ProcessStartInfo startInfo = new()
