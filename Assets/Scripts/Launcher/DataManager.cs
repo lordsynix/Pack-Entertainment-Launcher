@@ -115,6 +115,7 @@ public static class DataManager
         foreach(var kvp in LibraryGames)
         {
             convertedDictionary.Add(kvp.Key, kvp.Value);
+            Debug.Log($"Updated {kvp.Key} to {kvp.Value.PlaytimeInMinutes}");
         }
         await CloudSaveService.Instance.Data.ForceSaveAsync(convertedDictionary);
         Debug.Log("Profile and Games saved!");
