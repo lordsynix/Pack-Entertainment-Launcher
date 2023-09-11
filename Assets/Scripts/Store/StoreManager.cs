@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,11 +18,29 @@ public class StoreManager : MonoBehaviour
     private GameObject previousCategory;
     public Text categoryTag;
 
+    public Dictionary<string, Sprite> gameSprites;
+    public List<Sprite> gameLogos;
+
     private List<GameObject> spawnedGameItems = new();
 
     private void Awake()
     {
-        instance = this;       
+        instance = this;
+
+        if (gameLogos.Count != 5)
+        {
+            Debug.LogError("Please assign all game logo sprites");
+            return;
+        }
+
+        gameSprites = new()
+        {
+            {"Smut", gameLogos[0] },
+            {"ChessEngine", gameLogos[1] },
+            {"SpaceBattlefield", gameLogos[2] },
+            {"CavernEscape", gameLogos[3] },
+            {"TheAce", gameLogos[4] }
+        };
     }
 
     private void OnEnable()
@@ -85,7 +104,8 @@ public class StoreManager : MonoBehaviour
     private void SpawnItem(GameItem gameItem, GameObject category)
     {
         GameObject spawnedGameItem = Instantiate(gameItemPrefab, category.transform.GetChild(0).GetChild(0).GetChild(0));
-        spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(GameManager.instance.defaultLogo, gameItem.Name);
+        string gameName = AddSpacesToCamelCase(gameItem.Name);
+        spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(gameSprites[gameItem.Name], gameName);
 
         // Check if item has already been added to library. If yes then disable add button.
         if (DataManager.LibraryGames.ContainsKey(gameItem.Name))
@@ -93,5 +113,15 @@ public class StoreManager : MonoBehaviour
             spawnedGameItem.GetComponent<StoreItem>().addButton.SetActive(false);
         }
         spawnedGameItems.Add(spawnedGameItem);
+    }
+
+    public string AddSpacesToCamelCase(string input)
+    {
+        // Verwende eine regulaere Ausdrucksübereinstimmung, um Großbuchstaben zu finden und Leerzeichen einzufügen.
+        string pattern = "(?<=[a-z])(?=[A-Z])"; // Suche nach Übergängen von Klein- zu Großbuchstaben
+        string replacement = " "; // Ersetze den Übergang durch ein Leerzeichen
+
+        string formattedString = Regex.Replace(input, pattern, replacement);
+        return formattedString;
     }
 }

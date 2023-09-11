@@ -76,7 +76,9 @@ public class LibraryManager : MonoBehaviour
                 if (gameName == gameItem.Name && !CheckDuplicate(gameName))
                 {
                     GameObject spawnedGameItem = Instantiate(gameItemPrefab, gameItemParent);
-                    spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(GameManager.instance.defaultLogo, gameName);
+                    Sprite logo = StoreManager.instance.gameSprites[gameName];
+                    string name = StoreManager.instance.AddSpacesToCamelCase(gameName);
+                    spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(logo, name);
 
                     libraryDict.Add(gameName, spawnedGameItem);
                 }
@@ -97,7 +99,7 @@ public class LibraryManager : MonoBehaviour
         return false;
     }
 
-    public void SelectGame(GameObject game)
+    public void SelectGame(GameObject game, string gameName)
     {
         // Change color of selected game and activate game information window
         gameInformationWindow.SetActive(true);
@@ -106,8 +108,8 @@ public class LibraryManager : MonoBehaviour
 
 
         // Load achievements and playtime
-        SetGameStats(DataManager.LibraryGames[game.name]);
-        SetLibraryButtonTextWithGameState(game.name);
+        SetGameStats(DataManager.LibraryGames[gameName]);
+        SetLibraryButtonTextWithGameState(gameName);
 
         previousSelected = game;
     }
@@ -136,7 +138,8 @@ public class LibraryManager : MonoBehaviour
         if (libraryDict.Count > 0)
         {
             previousSelected = libraryDict.First().Value;
-            SelectGame(libraryDict.First().Value);
+
+            SelectGame(libraryDict.First().Value, libraryDict.First().Key);
         }
         else
         {

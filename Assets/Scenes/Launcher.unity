@@ -1095,6 +1095,12 @@ MonoBehaviour:
   gameItems: []
   gameItemPrefab: {fileID: 4371432679568768415, guid: e55fe542ed1f10a48b7946aa6463503c, type: 3}
   categoryTag: {fileID: 1432543440}
+  gameLogos:
+  - {fileID: 21300000, guid: 81460c1348744104d8549b3ea8c11ed3, type: 3}
+  - {fileID: 21300000, guid: e99c228a40de9d242ab7d298dc9f9db5, type: 3}
+  - {fileID: 21300000, guid: 43f3069b13f242f47aa9b1a1fa942500, type: 3}
+  - {fileID: 21300000, guid: 76ae78d803f51bc43a0625e1cb4d4b72, type: 3}
+  - {fileID: 21300000, guid: b810f02f404d9ca42ad708d6182a3806, type: 3}
 --- !u!114 &151975639
 MonoBehaviour:
   m_ObjectHideFlags: 0
