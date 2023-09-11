@@ -10,6 +10,7 @@ public class StoreManager : MonoBehaviour
     public static StoreManager instance;
 
     public GameObject store;
+    public GameObject[] categories;
     public GameItem[] gameItems;
     public GameObject gameItemPrefab;
 
@@ -20,15 +21,19 @@ public class StoreManager : MonoBehaviour
 
     private void Awake()
     {
-        instance = this;
+        instance = this;       
+    }
+
+    private void OnEnable()
+    {
+        OnClickCategory(categories[0]);
     }
 
     public void EnableCategory()
     {
-        HorizontalLayoutGroup[] categories = store.GetComponentsInChildren<HorizontalLayoutGroup>();
-        foreach (HorizontalLayoutGroup category in categories)
+        foreach (GameObject category in categories)
         {
-            if (category.enabled == true)
+            if (category.activeInHierarchy == true)
             {
                 previousCategory = category.gameObject;
                 ReloadCategory(category.gameObject);
@@ -39,12 +44,15 @@ public class StoreManager : MonoBehaviour
     public void OnClickCategory(GameObject activeCategory)
     {
         categoryTag.text = activeCategory.name;
-        previousCategory.SetActive(false);
-        activeCategory.SetActive(true);        
+        if (previousCategory != null)
+        {
+            previousCategory.SetActive(false);
+        }
+        activeCategory.SetActive(true);
         previousCategory = activeCategory;
 
-        ReloadCategory(activeCategory);        
-    }   
+        ReloadCategory(activeCategory);
+    }
 
     private void ReloadCategory(GameObject activeCategory)
     {
@@ -76,11 +84,11 @@ public class StoreManager : MonoBehaviour
 
     private void SpawnItem(GameItem gameItem, GameObject category)
     {
-        GameObject spawnedGameItem = Instantiate(gameItemPrefab, category.transform);
+        GameObject spawnedGameItem = Instantiate(gameItemPrefab, category.transform.GetChild(0).GetChild(0).GetChild(0));
         spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(GameManager.instance.defaultLogo, gameItem.Name);
-        
+
         // Check if item has already been added to library. If yes then disable add button.
-        if (DataManager.LibraryGames.ContainsKey(gameItem.Name)) 
+        if (DataManager.LibraryGames.ContainsKey(gameItem.Name))
         {
             spawnedGameItem.GetComponent<StoreItem>().addButton.SetActive(false);
         }
