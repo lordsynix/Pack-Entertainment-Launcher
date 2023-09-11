@@ -78,7 +78,7 @@ public class LibraryManager : MonoBehaviour
                     GameObject spawnedGameItem = Instantiate(gameItemPrefab, gameItemParent);
                     Sprite logo = StoreManager.instance.gameSprites[gameName];
                     string name = StoreManager.instance.AddSpacesToCamelCase(gameName);
-                    spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(logo, name);
+                    spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(logo, name, gameItem.Name);
 
                     libraryDict.Add(gameName, spawnedGameItem);
                 }
@@ -99,7 +99,7 @@ public class LibraryManager : MonoBehaviour
         return false;
     }
 
-    public void SelectGame(GameObject game, string gameName)
+    public void SelectGame(GameObject game)
     {
         // Change color of selected game and activate game information window
         gameInformationWindow.SetActive(true);
@@ -108,8 +108,8 @@ public class LibraryManager : MonoBehaviour
 
 
         // Load achievements and playtime
-        SetGameStats(DataManager.LibraryGames[gameName]);
-        SetLibraryButtonTextWithGameState(gameName);
+        SetGameStats(DataManager.LibraryGames[game.name]);
+        SetLibraryButtonTextWithGameState(game.name);
 
         previousSelected = game;
     }
@@ -139,7 +139,7 @@ public class LibraryManager : MonoBehaviour
         {
             previousSelected = libraryDict.First().Value;
 
-            SelectGame(libraryDict.First().Value, libraryDict.First().Key);
+            SelectGame(libraryDict.First().Value);
         }
         else
         {
@@ -242,9 +242,9 @@ public class LibraryManager : MonoBehaviour
         }
         catch
         {
-            string[] details;
-            if (game != null) details = new string[] { game.Name };
-            else details = new string[] { "Launcher" };
+            game.UpdateCurrentVersion("-1");
+            SpawnItems();
+            string[] details = new string[] { game.Name };
             GameManager.instance.errorHandler.OnError(1004, details);
         }
     }

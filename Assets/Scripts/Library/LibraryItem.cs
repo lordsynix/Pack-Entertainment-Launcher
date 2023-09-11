@@ -9,6 +9,6 @@ public class LibraryItem : MonoBehaviour
 
     public void OnClickItem()
     {
-        LibraryManager.instance.SelectGame(gameObject, name);
+        LibraryManager.instance.SelectGame(gameObject);
     }
 }

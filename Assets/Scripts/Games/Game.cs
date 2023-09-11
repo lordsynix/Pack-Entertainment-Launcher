@@ -56,15 +56,20 @@ public class Game
     public void UpdateCurrentVersion(string version)
     {
         string deviceToken = PlayerPrefs.GetString("DeviceToken");
-        foreach (var kvp in CurrentVersions)
+        CurrentVersion currentVersion = new() { Key = deviceToken, Value = version };
+
+        for (int i = 0; i < CurrentVersions.Count; i++)
         {
+            var kvp = CurrentVersions[i];
             if (kvp.Key == deviceToken)
             {
-                CurrentVersions.Remove(kvp);
+                CurrentVersions[i] = currentVersion;
             }
         }
-        CurrentVersion curVersion = new() { Key = deviceToken, Value = version };
-        CurrentVersions.Add(curVersion);
+        if (CurrentVersions.Count == 0)
+        {
+            CurrentVersions.Add(currentVersion);
+        }
     }
 
     public void UpdateGame(string url, string latestVersion, string _currentVersion)

@@ -105,7 +105,7 @@ public class StoreManager : MonoBehaviour
     {
         GameObject spawnedGameItem = Instantiate(gameItemPrefab, category.transform.GetChild(0).GetChild(0).GetChild(0));
         string gameName = AddSpacesToCamelCase(gameItem.Name);
-        spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(gameSprites[gameItem.Name], gameName);
+        spawnedGameItem.GetComponent<ItemConstructor>().ConstructWithData(gameSprites[gameItem.Name], gameName, gameItem.Name);
 
         // Check if item has already been added to library. If yes then disable add button.
         if (DataManager.LibraryGames.ContainsKey(gameItem.Name))

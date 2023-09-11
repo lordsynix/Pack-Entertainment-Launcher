@@ -11,10 +11,11 @@ public class ItemConstructor : MonoBehaviour
     private bool isDownloaded;
     private bool inLibrary;
 
-    public void ConstructWithData(Sprite sprite, string name)
+    public void ConstructWithData(Sprite sprite, string name, string gameName)
     {
         itemImage.sprite = sprite;
         itemName.text = name;
-        gameObject.name = name;
+        gameObject.name = gameName;
+        Debug.Log($"{itemName.text} aka. {gameObject.name} constructed");
     }    
 }

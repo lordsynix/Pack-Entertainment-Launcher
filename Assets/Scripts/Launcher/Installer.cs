@@ -60,11 +60,25 @@ public static class Installer
         File.WriteAllBytes(filePath, zipData);
         Debug.Log($"Stored ZipFile at: {filePath}");
 
-        // Extract Zip-File
-        if (!launcher) LibraryManager.instance.SetLibraryButton("Extracting...");
-        else GameManager.instance.ChangeUpdateState("Extracting data...");
-        ZipFile.ExtractToDirectory(filePath, folderPath);
-
+        try
+        {
+            // Extract Zip-File
+            if (!launcher) LibraryManager.instance.SetLibraryButton("EXTRACTING...");
+            else GameManager.instance.ChangeUpdateState("Extracting data...");
+            ZipFile.ExtractToDirectory(filePath, folderPath);
+        } 
+        catch
+        {
+            // Extraction failed
+            Directory.Delete(folderPath, true);
+            IsDownloading = false;
+            LibraryManager.instance.SetLibraryButton("DOWNLOAD");
+            string[] details = new string[] { game.Name };
+            if (!launcher) GameManager.instance.errorHandler.OnError(1005, details);
+            else GameManager.instance.ChangeUpdateState("Couldn't extract file...");
+            return;
+        }
+        
         string exeFileLauncher = "";
         string exeFileGame = "";
         if (launcher) exeFileLauncher = Path.Combine(folderPath, "Pack Launcher.exe");

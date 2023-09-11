@@ -50,6 +50,10 @@ public class ErrorHandler : MonoBehaviour
                 OnGameLaunchError(errorCode, details);
                 break;
 
+            case 1005:
+                OnExtractionError(errorCode, details);
+                break;
+
             default:
                 break;
         }
@@ -145,7 +149,26 @@ public class ErrorHandler : MonoBehaviour
         // Texts
         errorHeader.text = "Game launch failed";
         errorText.text = $"{details[0]} could not be started. Please try to reinstall " +
-                         $"the game or move the files to the correct folder.";
+                         $"the game.";
+
+        // Details
+        detail1.text = "Error Code:";
+        detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
+        detail2.text = "Game Name:";
+        detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"{details[0]}";
+
+        // Button & Panel
+        errorButton.onClick.AddListener(Back);
+        errorButton.GetComponentInChildren<Text>().text = "Back";
+        errorPanel.SetActive(true);
+    }
+
+    private void OnExtractionError(int errorCode, string[] details)
+    {
+        // Texts
+        errorHeader.text = "Game extraction failed";
+        errorText.text = $"{details[0]} could not be extracted. Probably the " +
+                         $"file already exists. Please try downloading the game again.";
 
         // Details
         detail1.text = "Error Code:";
