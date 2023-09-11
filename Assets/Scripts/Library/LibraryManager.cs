@@ -159,18 +159,18 @@ public class LibraryManager : MonoBehaviour
         {
             if (game.IsUpdated)
             {
-                gameButton.GetComponentInChildren<Text>().text = "Play";
+                gameButton.GetComponentInChildren<Text>().text = "PLAY";
                 deleteButton.gameObject.SetActive(true);
             }
             else
             {
-                gameButton.GetComponentInChildren<Text>().text = "Update";
+                gameButton.GetComponentInChildren<Text>().text = "UPDATE";
                 deleteButton.gameObject.SetActive(true);
             }
         }
         else
         {
-            gameButton.GetComponentInChildren<Text>().text = "Download";
+            gameButton.GetComponentInChildren<Text>().text = "DOWNLOAD";
             deleteButton.gameObject.SetActive(false);
         }
     }
@@ -184,20 +184,20 @@ public class LibraryManager : MonoBehaviour
             if (game.IsUpdated)
             {
                 // Launch Game
-                gameButton.GetComponentInChildren<Text>().text = "Running...";
+                gameButton.GetComponentInChildren<Text>().text = "RUNNING...";
                 LaunchGame(game);
             }
             else
             {
                 // Update Game
-                gameButton.GetComponentInChildren<Text>().text = "Updating...";
+                gameButton.GetComponentInChildren<Text>().text = "UPDATING...";
                 Installer.Delete(game, true); // Deletes and redownloads the game.
             }
         }
         else
         {
             // Download Game
-            gameButton.GetComponentInChildren<Text>().text = "Downloading...";
+            gameButton.GetComponentInChildren<Text>().text = "DOWNLOADING...";
             StartCoroutine(Installer.Download(game));
         }
     }
