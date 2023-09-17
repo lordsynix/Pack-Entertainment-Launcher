@@ -10,6 +10,7 @@ using Unity.VisualScripting;
 public static class Installer
 {
     public static bool IsDownloading { get; private set; }
+    private static bool reDownlaodingGame = false;
 
     public static string gamesPath;
 
@@ -70,19 +71,40 @@ public static class Installer
         catch
         {
             // Extraction failed
+            // Error 1005 - Auto solve with redownload
             Directory.Delete(folderPath, true);
             IsDownloading = false;
+            LibraryManager.instance.confirmDeleteButton.gameObject.SetActive(false);
             LibraryManager.instance.SetLibraryButton("DOWNLOAD");
-            string[] details = new string[] { game.Name };
-            if (!launcher) GameManager.instance.errorHandler.OnError(1005, details);
-            else GameManager.instance.ChangeUpdateState("Couldn't extract file...");
+
+            if (!reDownlaodingGame)
+            {
+                if (!launcher) LibraryManager.instance.OnMainButton();
+                else GameManager.instance.ChangeUpdateState("Couldn't extract file...");
+                reDownlaodingGame = true;
+            }
+            else
+            {
+                var details = new string[] { game.Name };
+                GameManager.instance.errorHandler.OnError(1005, details);
+                reDownlaodingGame = false;
+            }
+
             return;
         }
         
         string exeFileLauncher = "";
         string exeFileGame = "";
-        if (launcher) exeFileLauncher = Path.Combine(folderPath, "Pack Launcher.exe");
-        else exeFileGame = Path.Combine(folderPath, $"{game.Name}.exe");
+
+        if (launcher)
+        {
+            exeFileLauncher = Path.Combine(folderPath, "Pack Launcher.exe");
+        }
+        else
+        {
+            exeFileGame = Path.Combine(folderPath, $"{game.Name}.exe");
+        }
+
         while (!File.Exists(launcher ? exeFileLauncher : exeFileGame))
         {
             if (launcher) GameManager.instance.ChangeUpdateState("Extracting...");
@@ -172,7 +194,7 @@ public static class Installer
                 DataManager.LibraryGames.Remove(game.Name);
                 _ = DataManager.SaveLibraryGames();
 
-                if (!downloadGame) LibraryManager.instance.OnDeletionCompleted(game);
+                if (!downloadGame) OnDeleteCompleted(game);
             }
             catch (Exception ex)
             {
@@ -196,6 +218,35 @@ public static class Installer
 
             GameManager.instance.StartCoroutine(Download(game));
         }
+    }
+
+    private static void OnDeleteCompleted(Game game)
+    {
+        Game newGame = new()
+        {
+            Name = game.Name,
+            URL = game.URL,
+            LatestVersion = game.LatestVersion,
+            IsDownloaded = false,
+            IsUpdated = false,
+            CurrentVersions = new()
+        };
+
+        foreach (Game.CurrentVersion kvp in game.CurrentVersions)
+        {
+            if (kvp.Key != PlayerPrefs.GetString("DeviceToken"))
+            {
+                newGame.CurrentVersions.Add(kvp);
+            }
+            else
+            {
+                Game.CurrentVersion currentVersion = new() { Key = kvp.Key, Value = "-1" };
+                newGame.CurrentVersions.Add(currentVersion);
+            }
+        }
+        DataManager.LibraryGames[game.Name] = newGame; 
+        LibraryManager.instance.SetLibraryButtonTextWithGameState(game.Name);
+        _ = DataManager.SaveLibraryGames();
     }
 
     public static void DeleteOldLauncherVersions()
@@ -222,7 +273,6 @@ public static class Installer
                     {
                         // Access denied
                         Debug.LogError(ex.ToString());
-                        GameManager.instance.errorHandler.OnError(1003);
                     }
                 }
             }

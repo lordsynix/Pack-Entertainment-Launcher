@@ -1,15 +1,13 @@
 using System;
 using UnityEngine;
 using Unity.Services.Core;
-using Unity.Services.CloudSave;
 using Unity.Services.Authentication;
 using System.Threading.Tasks;
 using UnityEngine.UI;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine.SceneManagement;
-using System.Runtime.CompilerServices;
-using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 
 public class AuthManager : MonoBehaviour
 {
@@ -42,6 +40,7 @@ public class AuthManager : MonoBehaviour
 
         if (!PlayerPrefs.HasKey("DeviceToken"))
         {
+            PlayerPrefs.DeleteAll();
             string uniqueToken = GenerateUniqueToken();
 
             PlayerPrefs.SetString("DeviceToken", uniqueToken);
@@ -50,23 +49,6 @@ public class AuthManager : MonoBehaviour
 
             Debug.Log($"Device Token safed: {uniqueToken}");
 
-            try
-            {
-                string gamesPath = Path.Combine(Application.dataPath + "/../../Games");
-
-                if (Directory.Exists(gamesPath))
-                {
-                    Directory.Delete(gamesPath, true);
-                }
-                else
-                {
-                    Debug.LogError($"{gamesPath} does not exist");
-                }
-            }
-            catch
-            {
-                errorHandler.OnError(1003);
-            }
         }
 
         try
@@ -76,7 +58,7 @@ public class AuthManager : MonoBehaviour
             // Check if launcher with credentials in args
             if (ArgsContainCredentials())
             {
-                await SignInWithUsernamePasswordAsync(username, password);
+                await SignInWithUsernamePasswordAsync(username, password, true);
                 return;
             }
 
@@ -165,57 +147,98 @@ public class AuthManager : MonoBehaviour
         else return false;
     }
 
+    private static bool IsStrongPassword(string password)
+    {
+        // Define the regular expression pattern for the password requirements
+        string pattern = @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}|:;<>,.?~\\[\]\""'-]).{8,30}$";
+
+        // Use Regex.IsMatch to check if the password matches the pattern
+        return Regex.IsMatch(password, pattern);
+    }
+
+    private string HashPassword(string password)
+    {
+        // Erstelle eine Instanz des SHA-256-Hashalgorithmus
+        using (SHA256 sha256 = SHA256.Create())
+        {
+            // Konvertiere das Passwort in Bytes
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+
+            // Berechne den Hashwert des Passworts
+            byte[] hashBytes = sha256.ComputeHash(passwordBytes);
+
+            // Konvertiere den Hashwert in eine hexadezimale Zeichenfolge
+            string hashedPassword = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+
+            return hashedPassword[..26] + "aA1!";
+        }
+    }
+
     public async void SignIn()
     {
+        alertText.color = Color.white;
         alertText.text = "Signing in...";
 
         string username = usernameInputField.text;
         string password = passwordInputField.text;
 
         if (username.Length < 3)
+        {
+            alertText.color = Color.red;
             alertText.text = "Username is too short";
+        }
         else if (username.Length > 20)
+        {
+            alertText.color = Color.red;
             alertText.text = "Username is too long";
-        else if (password.Length < 8)
-            alertText.text = "Password is too short";
-        else if (password.Length > 30)
-            alertText.text = "Password is too long";
+        }
+        else if (!IsStrongPassword(password))
+        {
+            alertText.color = Color.red;
+            alertText.text = "Password is invalid";
+        }
         else
         {
             SetButtonState(false);
-            await SignInWithUsernamePasswordAsync(username, password);
+            await SignInWithUsernamePasswordAsync(username, HashPassword(password));
         }
     }
 
     public async void SignUp()
     {
+        alertText.color = Color.white;
         alertText.text = "Signing up...";
 
         string username = usernameInputField.text;
         string password = passwordInputField.text;
 
         if (username.Length < 3)
+        {
+            alertText.color = Color.red;
             alertText.text = "Username is too short";
+        }
         else if (username.Length > 20)
+        {
+            alertText.color = Color.red;
             alertText.text = "Username is too long";
-        else if (password.Length < 8)
-            alertText.text = "Password is too short";
-        else if (password.Length > 30)
-            alertText.text = "Password is too long";
+        }
+        else if (!IsStrongPassword(password))
+        {
+            alertText.color = Color.red;
+            alertText.text = "Password is invalid";
+        }
         else
         {
             SetButtonState(false);
-            await SignUpWithUsernamePasswordAsync(username, password);
+            await SignUpWithUsernamePasswordAsync(username, HashPassword(password));
         }
     }
 
     public async Task SignUpWithUsernamePasswordAsync(string username, string password)
-    { 
+    {
         try
         {
             await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(username, password);
-
-            alertText.text = "forwarding...";
 
             PlayerPrefs.SetString("username", username);
             PlayerPrefs.SetString("password", password);
@@ -225,43 +248,27 @@ public class AuthManager : MonoBehaviour
         catch (AuthenticationException ex)
         {
             Debug.LogException(ex);
-            Debug.Log($"Authentication Error Code: {ex.ErrorCode}");
+            Debug.Log(ex.ErrorCode);
 
-            if (ex.ErrorCode == 10002)
-            {
-                // Invalid credentials
-                alertText.text = "Invalid credentials";
-            }
-            else if (ex.ErrorCode == 10003)
-            {
-                // Entity exists
-                alertText.text = "Username already exists";
-            }
-            else
-            {
-                alertText.text = "Failed. Please try again";
-            }
-
+            alertText.text = GetAuthenticationErrorMessage(ex);
             SetButtonState(true);
         }
         catch (RequestFailedException ex)
         {
             Debug.LogException(ex);
-            Debug.Log($"RequestFailed");
+            Debug.Log(ex.ErrorCode);
 
-            alertText.text = "Invalid password";
+            alertText.text = GetRequestErrorMessage(ex);
             SetButtonState(true);
         }
     }
 
-    public async Task SignInWithUsernamePasswordAsync(string username, string password)
+    public async Task SignInWithUsernamePasswordAsync(string username, string password, bool authWithArgs = false)
     {
         try
         {
             await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(username, password);
 
-            alertText.text = "forwarding...";
-
             PlayerPrefs.SetString("username", username);
             PlayerPrefs.SetString("password", password);
 
@@ -270,21 +277,48 @@ public class AuthManager : MonoBehaviour
         catch (AuthenticationException ex)
         {
             Debug.LogException(ex);
-            Debug.Log($"Authentication Error Code: {ex.ErrorCode}");
+            Debug.Log(ex.ErrorCode);
 
-            alertText.text = "Failed. Please try again";
+            if (!authWithArgs) alertText.text = GetAuthenticationErrorMessage(ex);
             SetButtonState(true);
             startingScreen.SetActive(false);
         }
         catch (RequestFailedException ex)
         {
             Debug.LogException(ex);
-            Debug.Log($"RequestFailed");
+            Debug.Log(ex.Message);
 
-            alertText.text = "Invalid credentials";
+            if (!authWithArgs) alertText.text = GetRequestErrorMessage(ex);
             SetButtonState(true);
             startingScreen.SetActive(false);
         }
+    }
+
+    private string GetAuthenticationErrorMessage(AuthenticationException ex)
+    {
+        alertText.color = Color.red;
+
+        if (ex.ErrorCode == 10002)
+        {
+            // Invalid credentials
+            return "Invalid credentials";
+        }
+        else if (ex.ErrorCode == 10003)
+        {
+            // Entity exists
+            return "Username already exists";
+        }
+        else
+        {
+            return "Authentication failed. Please try again";
+        }
+    }
+
+    private string GetRequestErrorMessage(RequestFailedException ex)
+    {
+        alertText.color = Color.red;
+
+        return "Invalid credentials";
     }
 
     private void SetButtonState(bool toggle)

@@ -43,7 +43,7 @@ public class StoreManager : MonoBehaviour
         };
     }
 
-    private void OnEnable()
+    public void OnEnable()
     {
         OnClickCategory(categories[0]);
     }

@@ -17,6 +17,9 @@ public class ErrorHandler : MonoBehaviour
 
     public void OnError(int errorCode, string[] details = null)
     {
+        // Opens troubleshooting webpage in the user's standard browser
+        Application.OpenURL("https://packentertainment.net/troubleshooting");
+
         detail1.text = "Error Code:";
         detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
         detail2.text = "";
@@ -52,6 +55,10 @@ public class ErrorHandler : MonoBehaviour
 
             case 1005:
                 OnExtractionError(errorCode, details);
+                break;
+
+            case 1006:
+                OnLauncherLaunchError(errorCode);
                 break;
 
             default:
@@ -144,18 +151,18 @@ public class ErrorHandler : MonoBehaviour
         errorPanel.SetActive(true);
     }
 
-    private void OnGameLaunchError(int errorCode, string[] details)
+    private void OnLauncherLaunchError(int errorCode)
     {
         // Texts
-        errorHeader.text = "Game launch failed";
-        errorText.text = $"{details[0]} could not be started. Please try to reinstall " +
-                         $"the game.";
+        errorHeader.text = "Launcher launch failed";
+        errorText.text = $"The new Launcher could not be started. Please try to launch the new version's executable manually " +
+                         $"under the path 'C:/Users/[User]/Documents/Pack Entertainment/Launcher-[Newest Version]'.";
 
         // Details
         detail1.text = "Error Code:";
         detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
         detail2.text = "Game Name:";
-        detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"{details[0]}";
+        detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"Launcher";
 
         // Button & Panel
         errorButton.onClick.AddListener(Back);
@@ -182,6 +189,25 @@ public class ErrorHandler : MonoBehaviour
         errorPanel.SetActive(true);
     }
 
+    private void OnGameLaunchError(int errorCode, string[] details)
+    {
+        // Texts
+        errorHeader.text = "Game launch failed";
+        errorText.text = $"{details[0]} could not be started. Please note that you cannot change the " +
+                         $"file path of the game. The {details[0]} will be downloaded again for you.";
+
+        // Details
+        detail1.text = "Error Code:";
+        detail1.gameObject.transform.GetChild(0).GetComponent<Text>().text = errorCode.ToString();
+        detail2.text = "Game Name:";
+        detail2.gameObject.transform.GetChild(0).GetComponent<Text>().text = $"{details[0]}";
+
+        // Button & Panel
+        errorButton.onClick.AddListener(Back);
+        errorButton.GetComponentInChildren<Text>().text = "Back";
+        errorPanel.SetActive(true);
+    }
+
     private void Back()
     {
         errorPanel.SetActive(false);
@@ -190,7 +216,14 @@ public class ErrorHandler : MonoBehaviour
     private void Quit()
     {
         // TODO Open Game Launcher.
-        Application.Quit();
+        try
+        {
+            GameManager.instance.Quit();
+        }
+        catch
+        {
+            Application.Quit();
+        }
     }
 
     private void UpdateLauncher()

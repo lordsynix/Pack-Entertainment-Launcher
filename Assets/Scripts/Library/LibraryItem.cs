@@ -9,6 +9,8 @@ public class LibraryItem : MonoBehaviour
 
     public void OnClickItem()
     {
+        if (Installer.IsDownloading) return;
+
         LibraryManager.instance.SelectGame(gameObject);
     }
 }

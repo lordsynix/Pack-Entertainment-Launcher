@@ -40,12 +40,16 @@ public class ProfileManager : MonoBehaviour
         SetDevicesInformation();
     }
 
-    private void SetProfileInformation()
+    public void SetProfileInformation()
     {
+        foreach (Transform child in ProfileInformationParent.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
         Dictionary<string, string> data = new()
         {
             { "Username:", PlayerPrefs.GetString("username") },
-            { "Password:", new string('*', PlayerPrefs.GetString("password").Length) },
             { "In library:", $"{DataManager.LibraryGames.Count} games added" },
             { "Account devices:", $"{PlayerProfile.Devices.Count} active devices" }
         };
@@ -62,6 +66,11 @@ public class ProfileManager : MonoBehaviour
 
     private void SetDevicesInformation()
     {
+        foreach (Transform child in DevicesInformationParent.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
         foreach (var device in PlayerProfile.Devices)
         {
             var newDevice = Instantiate(DevicesInformationPrefab, DevicesInformationParent.transform);

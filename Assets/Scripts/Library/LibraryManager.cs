@@ -16,7 +16,8 @@ public class LibraryManager : MonoBehaviour
 
     public GameObject gameInformationWindow;
     public Button gameButton;
-    public Button deleteButton;
+    public Button finalDeleteButton;
+    public Button confirmDeleteButton;
     public Text achievementCount;
     public Text playtime;
 
@@ -32,7 +33,7 @@ public class LibraryManager : MonoBehaviour
         instance = this;
 
         gameButton.onClick.AddListener(OnMainButton);
-        deleteButton.onClick.AddListener(OnDeleteButton);
+        finalDeleteButton.onClick.AddListener(OnDeleteButton);
     }
 
     private void Update()
@@ -121,16 +122,17 @@ public class LibraryManager : MonoBehaviour
         if (_minutes != -1)
         {
             playtimeInMinutes += _minutes;
+
+            game.PlaytimeInMinutes = playtimeInMinutes;
+            DataManager.LibraryGames[game.Name] = game;
+
+            _ = DataManager.SaveLibraryGames();
         }
 
         int hours = Mathf.FloorToInt((float)playtimeInMinutes / 60);
         int minutes = (int)playtimeInMinutes - 60 * hours;
 
         playtime.text = $"{hours} hours and {minutes} minutes";
-
-        game.PlaytimeInMinutes = playtimeInMinutes;
-        DataManager.LibraryGames[game.Name] = game;
-        UnityEngine.Debug.Log($"Updated playtime for {game.Name} to {game.PlaytimeInMinutes}");
     }
 
     public void ResetSelection()
@@ -163,23 +165,25 @@ public class LibraryManager : MonoBehaviour
             if (game.IsUpdated)
             {
                 gameButton.GetComponentInChildren<Text>().text = "PLAY";
-                deleteButton.gameObject.SetActive(true);
+                confirmDeleteButton.gameObject.SetActive(true);
             }
             else
             {
                 gameButton.GetComponentInChildren<Text>().text = "UPDATE";
-                deleteButton.gameObject.SetActive(true);
+                confirmDeleteButton.gameObject.SetActive(true);
             }
         }
         else
         {
             gameButton.GetComponentInChildren<Text>().text = "DOWNLOAD";
-            deleteButton.gameObject.SetActive(false);
+            confirmDeleteButton.gameObject.SetActive(false);
         }
     }
 
     public void OnMainButton()
     {
+        if (Installer.IsDownloading) return;
+
         Game game = DataManager.LibraryGames[previousSelected.name];
 
         if (game.IsDownloaded)
@@ -212,14 +216,6 @@ public class LibraryManager : MonoBehaviour
         Installer.Delete(game);
     }
 
-    public void OnDeletionCompleted(Game game)
-    {
-        libraryDict.Remove(game.Name);
-        Destroy(previousSelected);
-        ResetSelection();
-        StoreManager.instance.EnableCategory();
-    }
-
     public void LaunchGame(Game game)
     {
         if (game == null) return;
@@ -242,10 +238,34 @@ public class LibraryManager : MonoBehaviour
         }
         catch
         {
-            game.UpdateCurrentVersion("-1");
+            Game newGame = new()
+            {
+                Name = game.Name,
+                URL = game.URL,
+                LatestVersion = game.LatestVersion,
+                IsDownloaded = false,
+                IsUpdated = false,
+                CurrentVersions = new()
+            };
+
+            foreach (Game.CurrentVersion kvp in game.CurrentVersions)
+            {
+                if (kvp.Key != PlayerPrefs.GetString("DeviceToken"))
+                {
+                    newGame.CurrentVersions.Add(kvp);
+                }
+                else
+                {
+                    Game.CurrentVersion currentVersion = new() { Key = kvp.Key, Value = "-1"};
+                    newGame.CurrentVersions.Add(currentVersion);
+                }
+            }
+            DataManager.LibraryGames[game.Name] = newGame;
+
             SpawnItems();
-            string[] details = new string[] { game.Name };
-            GameManager.instance.errorHandler.OnError(1004, details);
+            SetLibraryButtonTextWithGameState(game.Name);
+            GameManager.instance.errorHandler.OnError(1004, new string[] { game.Name });
+            OnMainButton();
         }
     }
 
@@ -264,8 +284,7 @@ public class LibraryManager : MonoBehaviour
         }
         catch
         {
-            var details = new string[] { "Launcher" };
-            GameManager.instance.errorHandler.OnError(1004, details);
+            GameManager.instance.errorHandler.OnError(1006);
         }
     }
 }

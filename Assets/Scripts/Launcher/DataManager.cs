@@ -98,7 +98,7 @@ public static class DataManager
         Profile.FromJson(json);
     }
 
-    public static async Task SaveLibraryGames()
+    public static async Task SaveLibraryGames(bool quitApplication = false)
     {
         // Store data in JSON format
         Dictionary<string, object> convertedDictionary = new();
@@ -118,6 +118,8 @@ public static class DataManager
         }
         await CloudSaveService.Instance.Data.ForceSaveAsync(convertedDictionary);
         Debug.Log("Profile and Games saved!");
+
+        if (quitApplication) Application.Quit();
     }
 
     private static void ProcessData()
